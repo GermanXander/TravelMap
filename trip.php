@@ -44,7 +44,7 @@ $points = $pointModel->getAll($tripId);
 
 // Sort points by visit_date (oldest to newest)
 usort($points, function($a, $b) {
-    return strtotime($a['visit_date']) - strtotime($b['visit_date']);
+    return strtotime($a['visit_date'] ?? '1970-01-01') - strtotime($b['visit_date'] ?? '1970-01-01');
 });
 
 // Calcular estadísticas
