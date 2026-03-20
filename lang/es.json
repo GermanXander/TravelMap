@@ -19,7 +19,8 @@
     "import_export": "Importar / Exportar",
     "import_flights": "Importar Vuelos",
     "import_airbnb": "Importar Airbnb",
-    "backup": "Respaldo"
+    "backup": "Respaldo",
+    "import_brouter": "Importar Rutas BRouter"
   },
   "admin": {
     "title": "Panel de Administración",
@@ -646,7 +647,27 @@
     "flights_selected": "vuelo(s) seleccionado(s)",
     "move_to": "Mover a...",
     "new_trip": "+ Crear nuevo viaje",
-    "move": "Mover"
+    "move": "Mover",
+    "brouter_description": "Importa rutas generadas con",
+    "brouter_types": "tren, auto, barco, bicicleta, caminata, bus, etc.",
+    "brouter_hint": "Exportado desde brouter.de — máximo 5 MB.",
+    "brouter_how": "¿Cómo exportar desde BRouter?",
+    "brouter_step1": "Abrí",
+    "brouter_step2": "Trazá tu ruta en el mapa",
+    "brouter_step3": "Clic en Export → CSV",
+    "brouter_step4": "Subí ese archivo aquí",
+    "drop_csv": "Arrastrá el CSV aquí o hacé clic para seleccionar",
+    "distance_km": "Distancia (km)",
+    "duration_min": "Duración (min)",
+    "waypoints": "Waypoints",
+    "rail_subtype": "Subtipo de vía",
+    "upload_another": "Subir otro CSV",
+    "brouter_success": "Ruta importada correctamente.",
+    "brouter_name_placeholder": "Ej: Tren Atenas → Spata",
+    "name_stored_in_metadata": "Se guarda en los metadatos de la ruta.",
+    "color_hint": "Se sincroniza con el tipo elegido.",
+    "date_in_metadata": "Se guarda en los metadatos.",
+    "and_refresh": "y refrescar esta página."
   },
   "backup": {
     "title": "Respaldo y Restauración",

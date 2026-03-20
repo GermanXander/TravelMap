@@ -175,7 +175,19 @@ $user_id = get_current_user_id();
                             <span class="nav-item-label"><?= __('navigation.import_airbnb') ?></span>
                         </a>
                     </div>
-                    
+                    <div class="nav-item">
+                        <a class="nav-link <?= ($current_page === 'import_brouter.php') ? 'active' : '' ?>"
+                        href="<?= BASE_URL ?>/admin/import_brouter.php"
+                        title="<?= __('navigation.import_brouter') ?? 'Importar Rutas BRouter' ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 17l4-8 4 4 4-6 4 4"/>
+                                <circle cx="3" cy="17" r="1.5"/>
+                                <circle cx="21" cy="11" r="1.5"/>
+                            </svg>
+                            <span class="nav-item-label"><?= __('navigation.import_brouter') ?? 'Importar Rutas BRouter' ?></span>
+                        </a>
+                    </div>
                     <div class="nav-item">
                         <a class="nav-link <?= ($current_page === 'backup.php') ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/backup.php" title="<?= __('navigation.backup') ?? 'Backup' ?>">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -242,7 +254,7 @@ $user_id = get_current_user_id();
                             </svg>
                         </div>
                         <div class="sidebar-user-info">
-                            <div class="sidebar-user-name"><?= htmlspecialchars($username) ?></div>
+                            <div class="sidebar-user-name"><?= htmlspecialchars($username?? '') ?></div>
                             <div class="sidebar-user-role">Administrator</div>
                         </div>
                     </a>

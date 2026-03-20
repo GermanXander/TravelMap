@@ -19,7 +19,8 @@
     "import_export": "Import / Export",
     "import_flights": "Import Flights",
     "import_airbnb": "Import Airbnb",
-    "backup": "Backup"
+    "backup": "Backup",
+    "import_brouter": "Import BRouter Routes"
   },
   "admin": {
     "title": "Admin Panel",
@@ -626,7 +627,27 @@
     "flights_selected": "flight(s) selected",
     "move_to": "Move to...",
     "new_trip": "+ Create new trip",
-    "move": "Move"
+    "move": "Move",
+    "brouter_description": "Import routes generated with",
+    "brouter_types": "train, car, ship, bike, walk, bus, etc.",
+    "brouter_hint": "Exported from brouter.de — max 5 MB.",
+    "brouter_how": "How to export from BRouter?",
+    "brouter_step1": "Open",
+    "brouter_step2": "Draw your route on the map",
+    "brouter_step3": "Click Export → CSV",
+    "brouter_step4": "Upload that file here",
+    "drop_csv": "Drag the CSV here or click to select",
+    "distance_km": "Distance (km)",
+    "duration_min": "Duration (min)",
+    "waypoints": "Waypoints",
+    "rail_subtype": "Way subtype",
+    "upload_another": "Upload another CSV",
+    "brouter_success": "Route imported successfully.",
+    "brouter_name_placeholder": "e.g. Train Athens → Spata",
+    "name_stored_in_metadata": "Stored in route metadata.",
+    "color_hint": "Syncs with selected type.",
+    "date_in_metadata": "Stored in metadata.",
+    "and_refresh": "and refresh this page."
   },
   "backup": {
     "title": "Backup & Restore",
