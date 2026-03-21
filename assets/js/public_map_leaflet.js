@@ -1207,7 +1207,7 @@
         // Usar thumbnail para mostrar en popup, full image para lightbox
         if (point.image_url) {
             const displayImage = point.thumbnail_url || point.image_url;
-            html += `<img src="${displayImage}" alt="${escapeHtml(point.title)}" class="popup-image" onclick="openLightbox('${point.image_url}', '${escapeHtml(point.title)}')" title="${__('map.click_to_view_full')}">`;
+            html += `<img src="${displayImage}" alt="${escapeHtml(point.title)}" class="popup-image" onclick="openLightbox('${escapeJsString(point.image_url)}', '${escapeJsString(point.title)}')" title="${__('map.click_to_view_full')}">`;
         }
 
         // Contenido
@@ -1597,6 +1597,11 @@
             "'": '&#039;'
         };
         return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+    }
+
+    function escapeJsString(text) {
+        if (!text) return '';
+        return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
     /**
