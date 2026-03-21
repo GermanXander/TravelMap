@@ -755,7 +755,7 @@
 
         if (point.image_url) {
             const displayImage = point.thumbnail_url || point.image_url;
-            html += `<img src="${displayImage}" alt="${escapeHtml(point.title)}" class="popup-image" onclick="openLightbox('${point.image_url}', '${escapeHtml(point.title)}')" title="${__('map.click_to_view_full')}">`;
+            html += `<img src="${displayImage}" alt="${escapeHtml(point.title)}" class="popup-image" onclick="openLightbox('${escapeJsString(point.image_url)}', '${escapeJsString(point.title)}')" title="${__('map.click_to_view_full')}">`;
         }
 
         html += '<div class="popup-content">';
@@ -1381,7 +1381,10 @@
     function showShareError() {
         alert(__('map.copy_failed'));
     }
-
+    function escapeJsString(text) {
+        if (!text) return '';
+        return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
     // ==================== SEARCH ====================
 
     function searchPublicPlace(query) {
