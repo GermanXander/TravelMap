@@ -324,7 +324,7 @@ Creado por Fabio Baccaglioni <fabiomb@gmail.com>
 Contribuciones:
 - [@Xyborg](https://github.com/Xyborg) - Importador FlightRadar CSV e Importador de Estadías Airbnb
 - [@tucho235](https://github.com/tucho235) - Sistema de tags para los viajes. Métricas de distancia de rutas.
-- [@herver1971] (https://github.com/herver1971) - Importación para BRouter
+- [@herver1971](https://github.com/herver1971) - Importación para BRouter
 
 Este es un proyecto personal de código abierto. Siéntete libre de hacer fork y adaptarlo a tus necesidades.
 
