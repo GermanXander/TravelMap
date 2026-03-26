@@ -58,7 +58,13 @@ Aplicación web completa para crear y visualizar mapas interactivos de viajes co
   - Creación de puntos tipo "stay" (estadía)
 - **Tags para viajes**: 🏠 
   - Organización con tags
-  
+- **Importador por coordenadas de BRouter**:
+- **Importador con imágenes por EXIF**:
+  - Detección de coordenadas y fechas por EXIF
+  - Detección de geolocalización y nombre de ciudad
+- **Página individual por viaje**:
+  - Ruta del viaje
+  - Fotografías con galería 
 
 ### Visualizador Público
 - **Mapa a Pantalla Completa**: Interfaz responsive con todos los viajes y puntos publicados
@@ -251,10 +257,6 @@ TravelMap incluye un sistema completo de internacionalización:
 - ✅ Persistencia de preferencia en localStorage
 - ✅ Detección automática del idioma del navegador
 - ✅ Archivos de traducción JSON independientes y fáciles de editar
-- ✅ Página individual por viaje
-- ✅ Importación con imágenes por EXIF de fechas y coordenadas
-- ✅ Importación de estadías en Airbnb
-- ✅ Importación de BRouter
 
 ### Instalación del Sistema i18n
 
