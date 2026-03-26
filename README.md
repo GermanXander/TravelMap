@@ -251,6 +251,7 @@ TravelMap incluye un sistema completo de internacionalización:
 - ✅ Persistencia de preferencia en localStorage
 - ✅ Detección automática del idioma del navegador
 - ✅ Archivos de traducción JSON independientes y fáciles de editar
+- ✅ Página individual por viaje
 
 ### Instalación del Sistema i18n
 
@@ -322,8 +323,8 @@ Ver [ESTRUCTURA.md](ESTRUCTURA.md) para detalles completos de la organización d
 Creado por Fabio Baccaglioni <fabiomb@gmail.com>
 
 Contribuciones:
-- [@Xyborg](https://github.com/Xyborg) - Importador FlightRadar CSV e Importador de Estadías Airbnb
-- [@tucho235](https://github.com/tucho235) - Sistema de tags para los viajes. Métricas de distancia de rutas.
+- [@Xyborg](https://github.com/Xyborg) - Cambios funcionales en admin. Importador FlightRadar CSV e Importador de Estadías Airbnb
+- [@tucho235](https://github.com/tucho235) - Sistema de tags para los viajes. Métricas de distancia de rutas. Página de viaje individual
 - [@herver1971](https://github.com/herver1971) - Importación para BRouter
 
 Este es un proyecto personal de código abierto. Siéntete libre de hacer fork y adaptarlo a tus necesidades.
