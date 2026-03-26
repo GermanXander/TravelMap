@@ -424,6 +424,13 @@ body.trip-page {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    cursor: grab;
+    user-select: none;
+}
+
+.media-carousel.is-dragging,
+.media-carousel.is-dragging * {
+    cursor: grabbing !important;
 }
 
 .media-carousel::-webkit-scrollbar {

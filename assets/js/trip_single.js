@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
     initInteractions();
     initTimeline();
+    initCarouselDrag();
 
     // Auto-update units if needed
     if (window.UnitManager) {
@@ -484,6 +485,78 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowRight') changeImage(1);
     }
 });
+
+// ==================== CAROUSEL DRAG ====================
+
+function initCarouselDrag() {
+    const container = document.querySelector('.media-carousel');
+    if (!container) return;
+
+    const DRAG_THRESHOLD = 5;
+    let isDown      = false;
+    let startX      = 0;
+    let scrollLeft  = 0;
+    let hasDragged  = false;
+
+    // — Mouse drag —
+    container.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isDown     = true;
+        hasDragged = false;
+        startX     = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+        container.classList.add('is-dragging');
+        container.style.scrollBehavior = 'auto';
+        container.style.scrollSnapType = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        const x    = e.pageX - container.offsetLeft;
+        const walk = x - startX;
+        if (Math.abs(walk) > DRAG_THRESHOLD) hasDragged = true;
+        container.scrollLeft = scrollLeft - walk;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!isDown) return;
+        isDown = false;
+        container.classList.remove('is-dragging');
+        container.style.scrollBehavior = '';
+        container.style.scrollSnapType = '';
+    });
+
+    // Block the click that fires right after releasing a drag
+    container.addEventListener('click', (e) => {
+        if (hasDragged) {
+            e.stopPropagation();
+            e.preventDefault();
+            hasDragged = false;
+        }
+    }, true);
+
+    // — Touch drag —
+    let touchStartX    = 0;
+    let touchScrollLeft = 0;
+
+    container.addEventListener('touchstart', (e) => {
+        touchStartX     = e.touches[0].pageX;
+        touchScrollLeft = container.scrollLeft;
+        container.style.scrollBehavior = 'auto';
+        container.style.scrollSnapType = 'none';
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        const walk = touchStartX - e.touches[0].pageX;
+        container.scrollLeft = touchScrollLeft + walk;
+    }, { passive: true });
+
+    container.addEventListener('touchend', () => {
+        container.style.scrollBehavior = '';
+        container.style.scrollSnapType = '';
+    }, { passive: true });
+}
 
 // Carousel Navigation
 window.scrollCarousel = function (direction) {
