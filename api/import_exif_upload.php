@@ -79,7 +79,7 @@ function readImageExifData(string $filePath): array {
         $dt = DateTime::createFromFormat('Y:m:d H:i:s', trim($dateStr));
         if ($dt) {
             $result['has_date']  = true;
-            $result['date']      = $dt->format('Y-m-d');
+            $result['date']      = $dt->format('Y-m-d\TH:i');
             $result['timestamp'] = $dt->getTimestamp();
         }
     }
