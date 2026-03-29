@@ -50,7 +50,7 @@ function exifGpsToDecimal(array $coords, string $hemisphere): ?float {
     return round($decimal, 7);
 }
 
-function readImageExifData(string $filePath): array {
+function readImageExifData(string $filePath, string $originalFilename = ''): array {
     $result = [
         'has_gps'   => false,
         'has_date'  => false,
@@ -86,7 +86,8 @@ function readImageExifData(string $filePath): array {
 
     // --- Fallback: Extract date from filename if EXIF data is missing or suspicious ---
     // Try fallback if: no date extracted yet OR the filename looks like it has date info
-    $filename = basename($filePath);
+    // Use original filename if provided, otherwise use temporary filename
+    $filename = !empty($originalFilename) ? $originalFilename : basename($filePath);
     if (!$result['has_date'] || preg_match('/(\d{4})(\d{2})(\d{2})[_-]?(\d{2})(\d{2})(\d{2})/', $filename)) {
         $matched = false;
         $debugLog = [];
@@ -290,8 +291,8 @@ foreach ($files as $file) {
 
     chmod($tempPath, 0644);
 
-    // Read EXIF
-    $exifData = readImageExifData($tempPath);
+    // Read EXIF (pass original filename for fallback date extraction)
+    $exifData = readImageExifData($tempPath, $file['name']);
 
     $images[] = [
         'temp_filename' => $tempFilename,
