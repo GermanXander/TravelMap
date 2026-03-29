@@ -179,21 +179,28 @@ c:\xampp\htdocs\TravelMap
 - Importa el archivo [database.sql](database.sql)
 - Esto creará la base de datos `travelmap` con todas las tablas necesarias
 
-### 3. Configurar la Conexión a la Base de Datos
-Edita [config/db.php](config/db.php) si tus credenciales son diferentes:
+### 3. Configurar los archivos de conexión
+
+En la carpeta `config/` encontrarás dos archivos de ejemplo:
+
+- `config.example.php` → copiarlo y renombrarlo como `config.php`
+- `db.example.php` → copiarlo y renombrarlo como `db.php`
+
+**Editar `config/db.php`** con las credenciales de tu base de datos:
 ```php
-// Valores por defecto
-'user' => 'root',
-'password' => ''  // vacía
+private const DB_HOST = '127.0.0.1';
+private const DB_NAME = 'travelmap';
+private const DB_USER = 'root';
+private const DB_PASS = '';          // tu contraseña
 ```
 
-### 4. Ajustar la URL Base
-Edita [config/config.php](config/config.php):
+**Editar `config/config.php`** con la carpeta de instalación:
 ```php
-$folder = 'TravelMap';  // Cambia si tu carpeta tiene otro nombre
+$folder = '/TravelMap';  // Cambia si tu carpeta tiene otro nombre
+                         // Usa '' si está en la raíz del dominio
 ```
 
-### 5. Crear Usuario Administrador
+### 4. Crear Usuario Administrador
 Accede a la URL de instalación (solo una vez):
 ```
 http://localhost/TravelMap/install/seed_admin.php
@@ -205,10 +212,18 @@ Esto creará el usuario administrador:
 
 **⚠️ IMPORTANTE**: Elimina o protege la carpeta `install/` después de ejecutar este paso.
 
-### 6. Acceder a la Aplicación
+### 5. Acceder a la Aplicación
 
 - **Panel Administrativo**: [http://localhost/TravelMap/admin/](http://localhost/TravelMap/admin/)
 - **Vista Pública**: [http://localhost/TravelMap/](http://localhost/TravelMap/)
+
+### Actualizar a una nueva versión
+
+Si ya tenés el proyecto instalado y querés actualizar:
+
+1. Descargá el ZIP de la nueva versión desde GitHub
+2. Descomprimilo y subí todos los archivos por FTP — `config.php` y `db.php` no están en el ZIP, así que tu configuración nunca será sobreescrita
+3. Si la nueva versión incluye migraciones de base de datos, ejecutá los scripts en `install/`
 
 ## 📖 Guía de Uso
 
@@ -304,6 +319,7 @@ El sistema i18n requiere una migración de base de datos. Ver instrucciones comp
 - Protección de rutas administrativas mediante autenticación
 - Foreign Keys con restricciones CASCADE para integridad referencial
 - Preparación de consultas SQL con PDO (prevención de SQL injection)
+- **Archivos de configuración excluidos del ZIP de distribución** — `config.php` y `db.php` nunca se distribuyen con el proyecto
 
 ## 📁 Estructura del Proyecto
 
