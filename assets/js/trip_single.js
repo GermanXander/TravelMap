@@ -4,6 +4,8 @@
 
 let map;
 let markers = [];
+let activeMarkerId = null;
+let pendingPopupMarkerId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initResizer();
@@ -69,7 +71,6 @@ function initMapLibre() {
             geometry: { type: 'Point', coordinates: [point.longitude, point.latitude] }
         })));
 
-        const popup = new maplibregl.Popup({ offset: 20, closeButton: false });
 
         function updateClusters() {
             clusterMarkers.forEach(m => m.remove());
@@ -97,23 +98,24 @@ function initMapLibre() {
                 } else {
                     const point = feature.properties;
                     const el    = MapRenderer.createPointMarkerEl(point);
-                    el.addEventListener('click', e => {
-                        e.stopPropagation();
-                        popup.setLngLat(coords)
-                            .setHTML(`
-                                <div style="padding:4px 2px;">
-                                    <strong>${point.title}</strong>
-                                    ${point.visit_date ? `<br><small style="color:#64748b">${new Date(point.visit_date).toLocaleDateString()}</small>` : ''}
-                                </div>
-                            `)
-                            .addTo(map);
-                    });
+
+                    const markerPopup = new maplibregl.Popup({ offset: 25, closeButton: false })
+                        .setHTML(`
+                            <div style="padding:4px 2px;">
+                                <strong>${point.title}</strong>
+                                ${point.visit_date ? `<br><small style="color:#64748b">${new Date(point.visit_date).toLocaleDateString()}</small>` : ''}
+                            </div>
+                        `);
 
                     const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
                         .setLngLat(coords)
+                        .setPopup(markerPopup)
                         .addTo(map);
 
                     markers[point.id] = marker;
+                    if (String(point.id) === String(activeMarkerId)) {
+                        el.classList.add('marker-selected');
+                    }
                     clusterMarkers.push(marker);
                 }
             });
@@ -260,6 +262,7 @@ function initLeaflet() {
                 border: 2px solid white;
                 border-radius: 50%;
                 box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
             "></div>`,
             iconSize: [16, 16],
             iconAnchor: [8, 8]
@@ -267,6 +270,21 @@ function initLeaflet() {
 
         const marker = L.marker([point.latitude, point.longitude], { icon: icon })
             .bindPopup(`<strong>${point.title}</strong>`);
+
+        marker.on('add', () => {
+            if (String(point.id) === String(activeMarkerId)) {
+                const el = marker.getElement();
+                if (el) {
+                    const inner = el.querySelector('div');
+                    const color = TRIP_DATA.color || '#3b82f6';
+                    if (inner) { inner.style.transform = 'scale(1.7)'; inner.style.boxShadow = `0 0 0 3px ${color}, 0 4px 12px ${color}66`; }
+                }
+            }
+            if (String(point.id) === String(pendingPopupMarkerId)) {
+                marker.openPopup();
+                pendingPopupMarkerId = null;
+            }
+        });
 
         markerClusterGroup.addLayer(marker);
         markers[point.id] = marker;
@@ -356,6 +374,14 @@ function initTimeline() {
     window.addEventListener('resize', drawPath);
 }
 
+function highlightCarouselItem(pointId) {
+    document.querySelectorAll('.media-item').forEach(item => item.classList.remove('active'));
+    const target = document.querySelector(`.media-item[data-point-id="${pointId}"]`);
+    if (!target) return;
+    target.classList.add('active');
+    target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+}
+
 function initInteractions() {
     // Timeline clicks
     document.querySelectorAll('.timeline-point').forEach(el => {
@@ -366,17 +392,51 @@ function initInteractions() {
 
             if (isNaN(lat) || isNaN(lng)) return;
 
-            // Highlight active point
+            // Highlight active point in timeline
             document.querySelectorAll('.timeline-point').forEach(p => p.classList.remove('active'));
             el.classList.add('active');
 
+            // Scroll carousel to matching photo
+            highlightCarouselItem(id);
+
+            // Highlight active marker on map
+            if (activeMarkerId && markers[activeMarkerId]) {
+                if (MAP_RENDERER === 'leaflet') {
+                    const prevEl = markers[activeMarkerId].getElement();
+                    if (prevEl) {
+                        const inner = prevEl.querySelector('div');
+                        if (inner) { inner.style.transform = ''; inner.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)'; }
+                    }
+                } else {
+                    const prevEl = markers[activeMarkerId].getElement();
+                    if (prevEl) prevEl.classList.remove('marker-selected');
+                }
+            }
+            activeMarkerId = id;
+            if (markers[id]) {
+                if (MAP_RENDERER === 'leaflet') {
+                    const curEl = markers[id].getElement();
+                    if (curEl) {
+                        const inner = curEl.querySelector('div');
+                        const color = TRIP_DATA.color || '#3b82f6';
+                        if (inner) { inner.style.transform = 'scale(1.7)'; inner.style.boxShadow = `0 0 0 3px ${color}, 0 4px 12px ${color}66`; }
+                    }
+                } else {
+                    const curEl = markers[id].getElement();
+                    if (curEl) curEl.classList.add('marker-selected');
+                }
+            }
+
             // Fly to map
             if (MAP_RENDERER === 'leaflet') {
+                pendingPopupMarkerId = id;
                 map.flyTo([lat, lng], 14);
-                if (markers[id]) markers[id].openPopup();
+                if (markers[id] && markers[id]._map) { markers[id].openPopup(); pendingPopupMarkerId = null; }
             } else {
                 map.flyTo({ center: [lng, lat], zoom: 14 });
-                if (markers[id]) markers[id].togglePopup();
+                map.once('moveend', () => {
+                    if (markers[id]) markers[id].togglePopup();
+                });
             }
         });
     });

@@ -1302,6 +1302,16 @@ body {
     font-size: 18px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     transform: rotate(-45deg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-point-marker.marker-selected {
+    z-index: 100 !important;
+}
+
+.custom-point-marker.marker-selected .point-marker-inner {
+    transform: rotate(-45deg) scale(1.4);
+    box-shadow: 0 0 0 3px var(--trip-color, #3b82f6), 0 4px 14px color-mix(in srgb, var(--trip-color, #3b82f6) 40%, transparent);
 }
 
 .point-marker-inner span {

@@ -496,6 +496,12 @@ body.trip-page {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.media-item.active {
+    box-shadow: 0 0 0 2px var(--trip-color, #3b82f6),
+                0 0 16px 4px color-mix(in srgb, var(--trip-color, #3b82f6) 45%, transparent);
+    transition: box-shadow 0.3s ease;
+}
+
 .media-item img {
     width: 100%;
     height: 100%;

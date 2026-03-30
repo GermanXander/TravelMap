@@ -227,8 +227,9 @@ $statsIcons = [
                 <div class="media-carousel">
                     <!-- Simple horizontal scroll carousel -->
                     <?php foreach ($pointsWithImages as $p): ?>
-                        <div class="media-item" 
-                             data-img="<?= htmlspecialchars($p['image_url']) ?>" 
+                        <div class="media-item"
+                             data-point-id="<?= (int)$p['id'] ?>"
+                             data-img="<?= htmlspecialchars($p['image_url']) ?>"
                              data-title="<?= htmlspecialchars($p['title']) ?>"
                              data-desc="<?= htmlspecialchars($p['description'] ?? '') ?>"
                              onclick="viewImageFromData(this)">
