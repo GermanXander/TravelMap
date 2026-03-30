@@ -13,13 +13,15 @@ require_once __DIR__ . '/../src/models/Trip.php';
 require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
 require_once __DIR__ . '/../src/models/TripTag.php';
+require_once __DIR__ . '/../src/models/PoiLink.php';
 require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 try {
-    $tripModel = new Trip();
-    $routeModel = new Route();
-    $pointModel = new Point();
+    $tripModel    = new Trip();
+    $routeModel   = new Route();
+    $pointModel   = new Point();
     $tripTagModel = new TripTag();
+    $poiLinkModel = new PoiLink();
     
     // Obtener todos los viajes publicados
     $trips = $tripModel->getAll('start_date DESC', 'published');
@@ -68,6 +70,8 @@ try {
                 $thumbnail_url = $thumb_path ? BASE_URL . '/' . $thumb_path : null;
             }
             
+            $links = PoiLink::toApiArray($poiLinkModel->getByPoiId((int) $point['id']));
+
             $processedPoints[] = [
                 'id' => (int) $point['id'],
                 'title' => $point['title'],
@@ -78,7 +82,8 @@ try {
                 'thumbnail_url' => $thumbnail_url,
                 'latitude' => (float) $point['latitude'],
                 'longitude' => (float) $point['longitude'],
-                'visit_date' => $point['visit_date']
+                'visit_date' => $point['visit_date'],
+                'links' => $links,
             ];
         }
         

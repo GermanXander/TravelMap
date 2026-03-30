@@ -306,7 +306,10 @@
     "copy_coordinates_manually": "y copiar las coordenadas manualmente.",
     "invalid_image_format": "Por favor, selecciona una imagen válida (JPG, JPEG, PNG o GIF)",
     "file_too_large": "El archivo es demasiado grande. El tamaño máximo es",
-    "point_info": "Información del Punto"
+    "point_info": "Información del Punto",
+    "external_links": "Links Externos",
+    "add_link": "Agregar link",
+    "link_label_optional": "Etiqueta (opcional)"
   },
   "routes": {
     "title": "Rutas",

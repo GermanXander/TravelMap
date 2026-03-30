@@ -318,10 +318,16 @@ body.trip-page {
 
 .point-content {
     display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.point-header {
+    display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 0.75rem;
-    flex: 1;
 }
 
 .point-title {
@@ -337,6 +343,30 @@ body.trip-page {
     color: #94a3b8;
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+.point-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.point-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    background: #f1f3f5;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.point-link-btn:hover {
+    background: #dee2e6;
+    transform: scale(1.12);
 }
 
 /* Winding route SVG path */

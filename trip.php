@@ -6,6 +6,7 @@ require_once __DIR__ . '/src/models/Trip.php';
 require_once __DIR__ . '/src/models/Route.php';
 require_once __DIR__ . '/src/models/Point.php';
 require_once __DIR__ . '/src/models/TripTag.php';
+require_once __DIR__ . '/src/models/PoiLink.php';
 require_once __DIR__ . '/src/helpers/FileHelper.php';
 require_once __DIR__ . '/src/models/Settings.php';
 
@@ -25,10 +26,11 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $tripId = (int)$_GET['id'];
 $db = getDB();
 
-$tripModel = new Trip();
-$routeModel = new Route();
-$pointModel = new Point();
+$tripModel    = new Trip();
+$routeModel   = new Route();
+$pointModel   = new Point();
 $tripTagModel = new TripTag();
+$poiLinkModel = new PoiLink();
 
 $trip = $tripModel->getById($tripId);
 
@@ -73,6 +75,8 @@ foreach ($points as $point) {
         $thumbnail_url = $thumb_path ? BASE_URL . '/' . $thumb_path : null;
     }
     
+    $links = PoiLink::toApiArray($poiLinkModel->getByPoiId((int) $point['id']));
+
     $processedPoints[] = [
         'id' => (int) $point['id'],
         'title' => $point['title'],
@@ -82,7 +86,8 @@ foreach ($points as $point) {
         'longitude' => (float) $point['longitude'],
         'image_url' => !empty($point['image_path']) ? BASE_URL . '/' . $point['image_path'] : null,
         'thumbnail_url' => $thumbnail_url,
-        'visit_date' => $point['visit_date']
+        'visit_date' => $point['visit_date'],
+        'links' => $links,
     ];
 }
 
@@ -199,9 +204,24 @@ $statsIcons = [
                         <div class="timeline-point" data-id="<?= $point['id'] ?>" data-lat="<?= $point['latitude'] ?>" data-lng="<?= $point['longitude'] ?>">
                             <div class="point-marker"></div>
                             <div class="point-content">
-                                <h3 class="point-title"><?= htmlspecialchars($point['title']) ?></h3>
-                                <?php if ($point['visit_date']): ?>
-                                    <span class="point-date"><?= date('d M Y', strtotime($point['visit_date'])) ?></span>
+                                <div class="point-header">
+                                    <h3 class="point-title"><?= htmlspecialchars($point['title']) ?></h3>
+                                    <?php if ($point['visit_date']): ?>
+                                        <span class="point-date"><?= date('d M Y', strtotime($point['visit_date'])) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!empty($point['links'])): ?>
+                                <div class="point-links">
+                                    <?php foreach ($point['links'] as $link): ?>
+                                    <a href="<?= htmlspecialchars($link['url']) ?>"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="point-link-btn"
+                                       title="<?= htmlspecialchars($link['label']) ?>">
+                                        <?= PoiLink::getSvg($link['type'], 14) ?>
+                                    </a>
+                                    <?php endforeach; ?>
+                                </div>
                                 <?php endif; ?>
                             </div>
                         </div>

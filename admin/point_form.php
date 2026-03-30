@@ -14,10 +14,12 @@ require_auth();
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/models/Point.php';
 require_once __DIR__ . '/../src/models/Trip.php';
+require_once __DIR__ . '/../src/models/PoiLink.php';
 require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 $pointModel = new Point();
-$tripModel = new Trip();
+$tripModel  = new Trip();
+$poiLinkModel = new PoiLink();
 $errors = [];
 $success = false;
 $point = null;
@@ -87,9 +89,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        // Preparar links enviados en el formulario
+        $submitted_links = [];
+        $link_types  = $_POST['link_type']  ?? [];
+        $link_urls   = $_POST['link_url']   ?? [];
+        $link_labels = $_POST['link_label'] ?? [];
+        foreach ($link_types as $i => $ltype) {
+            $lurl = trim($link_urls[$i] ?? '');
+            if ($lurl !== '') {
+                $submitted_links[] = [
+                    'link_type'  => $ltype,
+                    'url'        => $lurl,
+                    'label'      => trim($link_labels[$i] ?? ''),
+                    'sort_order' => $i,
+                ];
+            }
+        }
+
         if ($is_edit) {
             // Actualizar
             if ($pointModel->update($point_id, $data)) {
+                $poiLinkModel->replaceForPoi($point_id, $submitted_links);
                 $success = true;
                 $point = $pointModel->getById($point_id); // Recargar datos
                 $message = __('points.updated_success');
@@ -100,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Crear
             $new_id = $pointModel->create($data);
             if ($new_id) {
+                $poiLinkModel->replaceForPoi((int) $new_id, $submitted_links);
                 $success = true;
                 $message = __('points.saved_success');
                 // Redirigir a edición del nuevo punto
@@ -128,7 +149,9 @@ $form_data = $point ?? [
     'image_path' => null
 ];
 
-$point_types = Point::getTypes();
+$point_types  = Point::getTypes();
+$link_types   = PoiLink::getTypes();
+$existing_links = ($is_edit && $point) ? $poiLinkModel->getByPoiId($point['id']) : [];
 ?>
 
 <div class="row mb-4">
@@ -405,6 +428,71 @@ $point_types = Point::getTypes();
                         <?php endif; ?>
                     </div>
 
+                    <!-- Links externos -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg me-1" viewBox="0 0 16 16">
+                                <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1 1 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4 4 0 0 1-.128-1.287z"/>
+                                <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243z"/>
+                            </svg>
+                            <?= __('points.external_links') ?>
+                        </label>
+
+                        <div id="poi-links-container">
+                            <?php foreach ($existing_links as $i => $lnk): ?>
+                            <div class="poi-link-row input-group mb-2">
+                                <select name="link_type[]" class="form-select" style="max-width: 180px;">
+                                    <?php foreach ($link_types as $lkey => $lmeta): ?>
+                                        <option value="<?= $lkey ?>" <?= $lnk['link_type'] === $lkey ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($lmeta['label']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="url" name="link_url[]" class="form-control"
+                                       placeholder="https://" value="<?= htmlspecialchars($lnk['url']) ?>" required>
+                                <input type="text" name="link_label[]" class="form-control"
+                                       placeholder="<?= __('points.link_label_optional') ?>"
+                                       style="max-width: 160px;"
+                                       value="<?= htmlspecialchars($lnk['label'] ?? '') ?>">
+                                <button type="button" class="btn btn-outline-danger remove-link-btn" title="<?= __('common.remove') ?>">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <button type="button" id="add-link-btn" class="btn btn-outline-secondary btn-sm mt-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                            </svg>
+                            <?= __('points.add_link') ?>
+                        </button>
+
+                        <!-- Template row (hidden) -->
+                        <template id="link-row-template">
+                            <div class="poi-link-row input-group mb-2">
+                                <select name="link_type[]" class="form-select" style="max-width: 180px;">
+                                    <?php foreach ($link_types as $lkey => $lmeta): ?>
+                                        <option value="<?= $lkey ?>"><?= htmlspecialchars($lmeta['label']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="url" name="link_url[]" class="form-control" placeholder="https://" required>
+                                <input type="text" name="link_label[]" class="form-control"
+                                       placeholder="<?= __('points.link_label_optional') ?>"
+                                       style="max-width: 160px;">
+                                <button type="button" class="btn btn-outline-danger remove-link-btn" title="<?= __('common.remove') ?>">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                         <a href="points.php<?= isset($_GET['trip_id']) ? '?trip_id=' . $_GET['trip_id'] : '' ?>" class="btn btn-secondary"><?= __('common.cancel') ?></a>
                         <button type="submit" class="btn btn-primary">
@@ -480,6 +568,32 @@ const initialLng = <?= !empty($form_data['longitude']) ? $form_data['longitude']
 
 <!-- Script del mapa de puntos -->
 <script src="<?= ASSETS_URL ?>/js/point_map.js?v=<?php echo $version; ?>"></script>
+
+<script>
+// POI Links — add/remove rows
+(function () {
+    const container = document.getElementById('poi-links-container');
+    const template  = document.getElementById('link-row-template');
+    const addBtn    = document.getElementById('add-link-btn');
+
+    function attachRemove(row) {
+        row.querySelector('.remove-link-btn').addEventListener('click', function () {
+            row.remove();
+        });
+    }
+
+    // Attach to existing rows
+    container.querySelectorAll('.poi-link-row').forEach(attachRemove);
+
+    addBtn.addEventListener('click', function () {
+        const clone = template.content.cloneNode(true);
+        const row   = clone.querySelector('.poi-link-row');
+        attachRemove(row);
+        container.appendChild(row);
+        row.querySelector('input[type="url"]').focus();
+    });
+})();
+</script>
 
 <!-- Script para Drag & Drop de imágenes -->
 <script>

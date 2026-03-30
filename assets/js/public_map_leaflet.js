@@ -1255,6 +1255,16 @@
             html += `<p class="popup-description">${escapeHtml(point.description)}</p>`;
         }
 
+        // External links
+        if (point.links && point.links.length > 0) {
+            html += '<div class="popup-links">';
+            point.links.forEach(function (link) {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="${escapeHtml(link.color)}" viewBox="0 0 16 16">${link.svg_paths}</svg>`;
+                html += `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="popup-link-btn" title="${escapeHtml(link.label)}">${svg}</a>`;
+            });
+            html += '</div>';
+        }
+
         // Coordenadas
         html += `<p class="popup-coords">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-geo-alt me-1" viewBox="0 0 16 16">

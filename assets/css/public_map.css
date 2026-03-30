@@ -1465,6 +1465,30 @@ body {
     font-family: 'Courier New', monospace;
 }
 
+.popup-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.popup-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #f1f3f5;
+    transition: background 0.15s, transform 0.1s;
+    text-decoration: none;
+}
+
+.popup-link-btn:hover {
+    background: #e2e6ea;
+    transform: scale(1.1);
+}
+
 .route-popup {
     padding: 8px 12px;
 }
