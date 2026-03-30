@@ -40,6 +40,22 @@ $trips = $tripModel->getAll('title ASC');
 
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Procesar visit_date: convertir datetime-local format (YYYY-MM-DDTHH:mm) a MySQL DATETIME (YYYY-MM-DD HH:mm:ss)
+    $visit_date = $_POST['visit_date'] ?? null;
+    if (!empty($visit_date)) {
+        // datetime-local envía formato: YYYY-MM-DDTHH:mm
+        if (strpos($visit_date, 'T') !== false) {
+            // Reemplazar T con espacio y agregar :00 si no tiene segundos
+            $visit_date = str_replace('T', ' ', $visit_date);
+            if (strlen($visit_date) === 16) { // YYYY-MM-DD HH:mm
+                $visit_date = $visit_date . ':00'; // Agregar :00 segundos
+            }
+        }
+    } else {
+        // En edición, si el campo viene vacío, preservar el valor anterior
+        $visit_date = $is_edit ? ($point['visit_date'] ?? null) : null;
+    }
+
     $data = [
         'trip_id' => $_POST['trip_id'] ?? null,
         'title' => trim($_POST['title'] ?? ''),
@@ -48,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'icon' => $_POST['icon'] ?? 'default',
         'latitude' => $_POST['latitude'] ?? '',
         'longitude' => $_POST['longitude'] ?? '',
-        'visit_date' => $_POST['visit_date'] ?? null,
+        'visit_date' => $visit_date,
         'image_path' => $is_edit ? $point['image_path'] : null
     ];
 

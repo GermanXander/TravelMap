@@ -833,16 +833,16 @@ html.sidebar-collapsed .sidebar-user-link {
 
 /* Image thumbnail in table */
 .table-thumb {
-    width: 50px;
-    height: 50px;
+    width: 150px;
+    height: 150px;
     border-radius: var(--radius-md);
     object-fit: cover;
     border: 1px solid var(--admin-border);
 }
 
 .table-thumb-placeholder {
-    width: 50px;
-    height: 50px;
+    width: 150px;
+    height: 150px;
     border-radius: var(--radius-md);
     background: var(--admin-bg-alt);
     border: 1px solid var(--admin-border);
@@ -852,8 +852,8 @@ html.sidebar-collapsed .sidebar-user-link {
 }
 
 .table-thumb-placeholder svg {
-    width: 20px;
-    height: 20px;
+    width: 48px;
+    height: 48px;
     color: var(--admin-text-light);
 }
 

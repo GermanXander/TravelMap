@@ -91,7 +91,7 @@
         marker.bindPopup(`
             <strong>Ubicación seleccionada</strong><br>
             <small>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}</small>
-        `).openPopup();
+        `); //.openPopup();
 
         // Evento al arrastrar el marcador
         marker.on('dragend', onMarkerDrag);
