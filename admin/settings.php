@@ -450,7 +450,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <label for="thumbnail_max_width" class="form-label"><?= __('settings.thumbnail_max_width') ?? 'Max Width (px)' ?></label>
                         <input type="number" class="form-control" id="thumbnail_max_width" name="thumbnail_max_width" 
                                value="<?= htmlspecialchars($currentSettings['thumbnail_max_width'] ?? 400) ?>"
-                               min="100" max="800" required>
+                               min="100" max="1024" required>
                         <div class="form-hint"><?= __('settings.thumbnail_width_description') ?? 'Max width for thumbnails' ?></div>
             </div>
             
@@ -458,7 +458,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <label for="thumbnail_max_height" class="form-label"><?= __('settings.thumbnail_max_height') ?? 'Max Height (px)' ?></label>
                         <input type="number" class="form-control" id="thumbnail_max_height" name="thumbnail_max_height" 
                                value="<?= htmlspecialchars($currentSettings['thumbnail_max_height'] ?? 300) ?>"
-                               min="100" max="600" required>
+                               min="100" max="1024" required>
                         <div class="form-hint"><?= __('settings.thumbnail_height_description') ?? 'Max height for thumbnails' ?></div>
                 </div>
                 
