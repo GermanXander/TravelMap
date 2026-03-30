@@ -72,16 +72,20 @@ class Trip {
      */
     public function create($data) {
         try {
+            // Curar fechas: si son vacías, nulas o '0000-00-00', poner null
+            $start_date = isset($data['start_date']) && ($data['start_date'] !== '' && $data['start_date'] !== '0000-00-00') ? $data['start_date'] : null;
+            $end_date = isset($data['end_date']) && ($data['end_date'] !== '' && $data['end_date'] !== '0000-00-00') ? $data['end_date'] : null;
+
             $stmt = $this->db->prepare('
                 INSERT INTO trips (title, description, start_date, end_date, color_hex, status)
                 VALUES (?, ?, ?, ?, ?, ?)
             ');
-            
+
             $result = $stmt->execute([
                 $data['title'],
                 $data['description'] ?? null,
-                $data['start_date'] ?? null,
-                $data['end_date'] ?? null,
+                $start_date,
+                $end_date,
                 $data['color_hex'] ?? '#3388ff',
                 $data['status'] ?? 'draft'
             ]);
@@ -102,27 +106,35 @@ class Trip {
      */
     public function update($id, $data) {
         try {
+            // Curar fechas: si son vacías, nulas o '0000-00-00', poner null
+            if (array_key_exists('start_date', $data)) {
+                $data['start_date'] = ($data['start_date'] !== '' && $data['start_date'] !== '0000-00-00') ? $data['start_date'] : null;
+            }
+            if (array_key_exists('end_date', $data)) {
+                $data['end_date'] = ($data['end_date'] !== '' && $data['end_date'] !== '0000-00-00') ? $data['end_date'] : null;
+            }
+
             // Build dynamic update query based on provided fields
             $allowedFields = ['title', 'description', 'start_date', 'end_date', 'color_hex', 'status'];
             $setClauses = [];
             $values = [];
-            
+
             foreach ($allowedFields as $field) {
                 if (array_key_exists($field, $data)) {
                     $setClauses[] = "$field = ?";
                     $values[] = $data[$field];
                 }
             }
-            
+
             if (empty($setClauses)) {
                 return false; // Nothing to update
             }
-            
+
             $values[] = $id; // Add ID for WHERE clause
-            
+
             $sql = 'UPDATE trips SET ' . implode(', ', $setClauses) . ' WHERE id = ?';
             $stmt = $this->db->prepare($sql);
-            
+
             return $stmt->execute($values);
         } catch (PDOException $e) {
             error_log('Error al actualizar viaje: ' . $e->getMessage());
