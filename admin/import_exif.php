@@ -114,6 +114,18 @@ require_once __DIR__ . '/../includes/header.php';
                 </button>
                 <span class="text-muted small ms-2"><?= __('import_exif.upload_hint') ?? 'Se leerán los datos EXIF de cada imagen' ?></span>
             </div>
+
+            <!-- Progress bar (hidden until upload starts) -->
+            <div id="uploadProgressContainer" class="col-12 d-none">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span><?= __('import_exif.uploading') ?? 'Procesando imágenes...' ?></span>
+                    <span id="uploadProgressLabel">0%</span>
+                </div>
+                <div class="progress" style="height:10px;">
+                    <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
         </div>
 
         <?php endif; ?>
@@ -201,6 +213,10 @@ require_once __DIR__ . '/../includes/header.php';
 }
 .exif-card .card-body { padding: 0.85rem 1rem; }
 .exif-status { min-width: 90px; text-align: center; }
+.exif-card.missing-title {
+    border-left: 4px solid #dc3545 !important;
+    background: #fff5f5;
+}
 </style>
 
 <!-- ===================================================================== -->
@@ -303,34 +319,97 @@ require_once __DIR__ . '/../includes/header.php';
             formData.append('images[]', file);
         }
 
+        // Show progress container
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        progressContainer.classList.remove('d-none');
+        
+        const totalImages = fileInput.files.length;
+        // Initialize progress to 0 / totalImages (not 0%)
+        updateUploadProgress(0, totalImages);
+
         try {
-            const response = await fetch(API_UPLOAD, { method: 'POST', body: formData });
-            const data = await response.json();
+            await new Promise(function (resolve, reject) {
+                const xhr = new XMLHttpRequest();
+                
+                // Track upload progress
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = Math.round((e.loaded / e.total) * 100);
+                        // Estimar cantidad de imágenes procesadas basado en el porcentaje
+                        const estimatedImages = Math.max(1, Math.ceil((percentComplete / 100) * totalImages));
+                        updateUploadProgress(estimatedImages, totalImages);
+                    }
+                });
+                
+                xhr.addEventListener('load', function () {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data.success) {
+                            currentToken = data.token;
 
-            if (data.success) {
-                currentToken = data.token;
+                            if (data.errors && data.errors.length) {
+                                showAlert(
+                                    'Algunos archivos no pudieron procesarse: ' + data.errors.join(' | '),
+                                    'warning'
+                                );
+                            }
 
-                if (data.errors && data.errors.length) {
-                    showAlert(
-                        'Algunos archivos no pudieron procesarse: ' + data.errors.join(' | '),
-                        'warning'
-                    );
-                }
-
-                if (!data.images || data.images.length === 0) {
-                    showAlert('No se procesaron imágenes válidas. Verifica que los archivos sean JPEG.', 'danger');
-                } else {
-                    renderStep2(data.images);
-                }
-            } else {
-                showAlert(data.error || 'Error al procesar las imágenes.', 'danger');
-            }
+                            if (!data.images || data.images.length === 0) {
+                                showAlert('No se procesaron imágenes válidas. Verifica que los archivos sean JPEG.', 'danger');
+                                reject(new Error('No valid images'));
+                            } else {
+                                renderStep2(data.images);
+                                resolve();
+                            }
+                        } else {
+                            showAlert(data.error || 'Error al procesar las imágenes.', 'danger');
+                            reject(new Error(data.error));
+                        }
+                    } catch (e) {
+                        showAlert('Error al procesar respuesta del servidor.', 'danger');
+                        reject(e);
+                    }
+                });
+                
+                xhr.addEventListener('error', function () {
+                    showAlert('Error de comunicación con el servidor.', 'danger');
+                    reject(new Error('Network error'));
+                });
+                
+                xhr.addEventListener('abort', function () {
+                    showAlert('Carga cancelada por el usuario.', 'warning');
+                    reject(new Error('User abort'));
+                });
+                
+                xhr.open('POST', API_UPLOAD);
+                xhr.send(formData);
+            });
         } catch (err) {
-            showAlert('Error de comunicación: ' + err.message, 'danger');
+            // Error already shown in promise handlers
         } finally {
             btn.disabled = false;
             btn.innerHTML =
                 '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15"/><path d="M17 8L12 3L7 8"/><path d="M12 3V15"/></svg> Procesar imágenes';
+            
+            // Hide progress container after completion
+            setTimeout(function () {
+                progressContainer.classList.add('d-none');
+                updateUploadProgress(0, 0);
+            }, 500);
+        }
+    }
+
+    function updateUploadProgress(current, total) {
+        const bar = document.getElementById('uploadProgressBar');
+        const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+        bar.style.width = percent + '%';
+        bar.setAttribute('aria-valuenow', percent);
+        
+        const label = document.getElementById('uploadProgressLabel');
+        if (total > 0) {
+            label.textContent = current + ' / ' + total + ' imágenes';
+        } else {
+            label.textContent = '0%';
         }
     }
 
@@ -342,10 +421,17 @@ require_once __DIR__ . '/../includes/header.php';
         document.getElementById('step1Card').classList.add('d-none');
         document.getElementById('step2Container').classList.remove('d-none');
 
-        const withGps  = images.filter(function (i) { return i.has_gps; }).length;
-        const ready    = images.filter(function (i) { return i.has_gps && i.has_date; }).length;
-        document.getElementById('summaryText').textContent =
-            images.length + ' imagen(es) · ' + withGps + ' con GPS · ' + ready + ' listas para importar';
+        const withGps      = images.filter(function (i) { return i.has_gps && !i.gps_estimated; }).length;
+        const withEstimated = images.filter(function (i) { return i.gps_estimated; }).length;
+        const ready        = images.filter(function (i) { return i.has_date; }).length;
+        
+        let summaryStr = images.length + ' imagen(es) · ' + withGps + ' con GPS';
+        if (withEstimated > 0) {
+            summaryStr += ' · ' + withEstimated + ' estimadas';
+        }
+        summaryStr += ' · ' + ready + ' listas para importar';
+        
+        document.getElementById('summaryText').textContent = summaryStr;
 
         const container = document.getElementById('imagesContainer');
         container.innerHTML = '';
@@ -372,6 +458,7 @@ require_once __DIR__ . '/../includes/header.php';
     function createImageCard(img, index) {
         const hasGps  = img.has_gps  === true;
         const hasDate = img.has_date === true;
+        const gpsEstimated = img.gps_estimated === true;
         const enabled = hasDate;  // Solo requiere fecha (puede venir del EXIF o del nombre de archivo)
 
         const lat  = hasGps  ? Number(img.latitude).toFixed(6)  : '';
@@ -384,6 +471,8 @@ require_once __DIR__ . '/../includes/header.php';
             badgeHtml = '<span class="badge bg-secondary mt-1" title="Sin coordenadas GPS ni fecha EXIF">Sin GPS · Sin fecha</span>';
         } else if (!hasDate) {
             badgeHtml = '<span class="badge bg-secondary mt-1" title="No se encontró fecha en el EXIF ni en el nombre del archivo">Sin fecha</span>';
+        } else if (gpsEstimated) {
+            badgeHtml = '<span class="badge bg-warning text-dark mt-1" title="coordenadas estimadas por interpolación de imágenes anterior y posterior">📍 GPS estimado</span>';
         } else if (!hasGps) {
             badgeHtml = '<span class="badge bg-info text-dark mt-1" title="Fecha presente pero sin coordenadas GPS">Fecha ✓</span>';
         } else {
@@ -488,32 +577,72 @@ require_once __DIR__ . '/../includes/header.php';
             '</div>',
         ].join('\n');
 
-        /* Geocode button handler */
+        /* Geocode button handler AND auto-geocode */
+        const titleInput = card.querySelector('.exif-field-title');
+        
+        async function performGeocoding(lat, lng, isAutomatic = false) {
+            const geocodeBtn = card.querySelector('.btn-geocode');
+            if (geocodeBtn && !isAutomatic) {
+                geocodeBtn.disabled = true;
+                geocodeBtn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:.75em;height:.75em;"></span>';
+            }
+            
+            // Show spinner on title field while geocoding
+            const titleInput = card.querySelector('.exif-field-title');
+            if (isAutomatic) {
+                titleInput.parentElement.classList.add('position-relative');
+                let spinner = titleInput.parentElement.querySelector('.geocode-spinner');
+                if (!spinner) {
+                    spinner = document.createElement('div');
+                    spinner.className = 'geocode-spinner';
+                    spinner.innerHTML = '<span class="spinner-border spinner-border-sm position-absolute" style="right:10px;top:50%;transform:translateY(-50%);width:1.2rem;height:1.2rem;\"></span>';
+                    spinner.style.position = 'absolute';
+                    spinner.style.right = '10px';
+                    spinner.style.top = '50%';
+                    spinner.style.transform = 'translateY(-50%)';
+                    titleInput.parentElement.appendChild(spinner);
+                }
+            }
+
+            try {
+                const r = await fetch(
+                    API_GEOCODE + '?lat=' + encodeURIComponent(lat) +
+                    '&lng=' + encodeURIComponent(lng)
+                );
+                const gd = await r.json();
+                if (gd.success && gd.city) {
+                    titleInput.value = gd.city;
+                    if (!isAutomatic) titleInput.focus();
+                } else if (!isAutomatic) {
+                    showAlert('No se pudo obtener el nombre de la ciudad: ' + (gd.error || ''), 'warning');
+                }
+            } catch (e) {
+                if (!isAutomatic) {
+                    showAlert('Error al geocodificar: ' + e.message, 'warning');
+                }
+            } finally {
+                if (geocodeBtn && !isAutomatic) {
+                    geocodeBtn.disabled = false;
+                    geocodeBtn.innerHTML = GLOBE_SVG + ' Ciudad';
+                }
+                // Remove spinner if automatic
+                if (isAutomatic) {
+                    const spinner = titleInput.parentElement.querySelector('.geocode-spinner');
+                    if (spinner) spinner.remove();
+                }
+            }
+        }
+        
+        // Auto-geocode if GPS is available
+        if (hasGps && lat && lng) {
+            performGeocoding(lat, lng, true);
+        }
+        
+        // Manual geocode button handler
         const geocodeBtn = card.querySelector('.btn-geocode');
         if (geocodeBtn) {
             geocodeBtn.addEventListener('click', async function () {
-                const titleInput = card.querySelector('.exif-field-title');
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:.75em;height:.75em;"></span>';
-
-                try {
-                    const r = await fetch(
-                        API_GEOCODE + '?lat=' + encodeURIComponent(this.dataset.lat) +
-                        '&lng=' + encodeURIComponent(this.dataset.lng)
-                    );
-                    const gd = await r.json();
-                    if (gd.success && gd.city) {
-                        titleInput.value = gd.city;
-                        titleInput.focus();
-                    } else {
-                        showAlert('No se pudo obtener el nombre de la ciudad: ' + (gd.error || ''), 'warning');
-                    }
-                } catch (e) {
-                    showAlert('Error al geocodificar: ' + e.message, 'warning');
-                } finally {
-                    this.disabled = false;
-                    this.innerHTML = GLOBE_SVG + ' Ciudad';
-                }
+                await performGeocoding(this.dataset.lat, this.dataset.lng, false);
             });
         }
 
@@ -539,21 +668,44 @@ require_once __DIR__ . '/../includes/header.php';
         }
 
         /* Validate required fields before starting */
+        let firstMissingTitle = null;
+        let missingCount = 0;
+        
         for (const card of enabled) {
             const title = card.querySelector('.exif-field-title').value.trim();
             const lat   = card.querySelector('.exif-field-lat').value.trim();
             const lng   = card.querySelector('.exif-field-lng').value.trim();
 
             if (!title) {
-                showAlert('Todos los puntos habilitados deben tener un nombre.', 'warning');
-                card.querySelector('.exif-field-title').focus();
+                missingCount++;
+                if (!firstMissingTitle) {
+                    firstMissingTitle = card;
+                }
+                // Highlight card without title
+                card.classList.add('missing-title');
                 card.querySelector('.exif-field-title').classList.add('is-invalid');
-                return;
+            } else {
+                // Remove highlight if it exists
+                card.classList.remove('missing-title');
+                card.querySelector('.exif-field-title').classList.remove('is-invalid');
             }
+            
             if (!lat || !lng) {
                 showAlert('Todos los puntos habilitados deben tener coordenadas (latitud y longitud).', 'warning');
                 return;
             }
+        }
+
+        if (missingCount > 0) {
+            const msg = missingCount === 1 
+                ? 'Falta un nombre para 1 imagen. Completa el campo resaltado en rojo.'
+                : 'Faltan nombres para ' + missingCount + ' imágenes. Completa los campos resaltados en rojo.';
+            showAlert(msg, 'danger');
+            if (firstMissingTitle) {
+                firstMissingTitle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstMissingTitle.querySelector('.exif-field-title').focus();
+            }
+            return;
         }
 
         /* Lock UI */

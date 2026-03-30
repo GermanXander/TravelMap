@@ -223,6 +223,8 @@ $statsIcons = [
             <div class="trip-media">
                 <?php 
                 $pointsWithImages = array_filter($processedPoints, function($p) { return !empty($p['image_url']); });
+                // Sort by visit_date (newest first on left, oldest last on right)
+
                 if (!empty($pointsWithImages)): 
                 ?>
                 <button class="carousel-nav prev" onclick="scrollCarousel(-1)">&#10094;</button>

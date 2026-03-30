@@ -11,10 +11,10 @@ class Database {
     private $connection;
 
     // Configuración de la base de datos
-    private const DB_HOST = '127.0.0.1';
+    private const DB_HOST = 'mariadb';
     private const DB_NAME = 'travelmap';
-    private const DB_USER = 'root';
-    private const DB_PASS = '';
+    private const DB_USER = 'travelmap';
+    private const DB_PASS = 'travelmap7656';
     private const DB_CHARSET = 'utf8mb4';
 
     /**

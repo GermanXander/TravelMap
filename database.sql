@@ -145,3 +145,30 @@ CREATE TABLE IF NOT EXISTS trip_tags (
     -- Case-insensitive uniqueness enforced by collation utf8mb4_unicode_ci
     UNIQUE KEY unique_trip_tag (trip_id, tag_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Tabla: geocode_cache
+-- Descripción: Cache de resultados de geocodificación inversa (Nominatim)
+-- Reduce rate limiting y mejora performance
+-- ============================================
+CREATE TABLE IF NOT EXISTS geocode_cache (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    
+    -- Coordenadas (con precisión de 6 decimales = ~0.1m)
+    latitude DECIMAL(10, 6) NOT NULL,
+    longitude DECIMAL(11, 6) NOT NULL,
+    
+    -- Resultados de la búsqueda
+    city VARCHAR(255) NOT NULL,
+    display_name TEXT,
+    country VARCHAR(255),
+    
+    -- Control de tiempo
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL DEFAULT NULL,
+    
+    -- Índices para búsquedas rápidas
+    UNIQUE KEY unique_coords (latitude, longitude),
+    KEY idx_expires (expires_at),
+    KEY idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

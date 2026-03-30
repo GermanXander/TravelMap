@@ -50,6 +50,102 @@ function exifGpsToDecimal(array $coords, string $hemisphere): ?float {
     return round($decimal, 7);
 }
 
+// ---------------------------------------------------------------------------
+// GPS Interpolation: Estimate missing coordinates from nearby images
+// ---------------------------------------------------------------------------
+
+function estimateGpsCoordinates(array &$images): void {
+    // Group images without GPS but with date/time
+    $needsEstimate = [];
+    $withGps = [];
+    
+    foreach ($images as $idx => &$img) {
+        if ($img['has_gps']) {
+            $withGps[$idx] = $img;
+        } elseif ($img['has_date'] && $img['timestamp'] !== null) {
+            $needsEstimate[$idx] = $img;
+        }
+    }
+    
+    // If not enough images with GPS or we have no images needing estimates, return
+    if (count($withGps) < 1 || count($needsEstimate) === 0) {
+        return;
+    }
+    
+    // For each image without GPS
+    foreach ($needsEstimate as $idx => &$targetImg) {
+        $targetTime = $targetImg['timestamp'];
+        
+        // Find images with GPS before and after this one
+        $before = null;
+        $after = null;
+        
+        foreach ($withGps as $gpsIdx => $gpsImg) {
+            $timeDiff = $gpsImg['timestamp'] - $targetTime;
+            
+            // Image with GPS after target
+            if ($timeDiff > 0) {
+                if ($after === null || $gpsImg['timestamp'] < $images[$after]['timestamp']) {
+                    $after = $gpsIdx;
+                }
+            }
+            // Image with GPS before target
+            elseif ($timeDiff < 0) {
+                if ($before === null || $gpsImg['timestamp'] > $images[$before]['timestamp']) {
+                    $before = $gpsIdx;
+                }
+            }
+            // Exact match (same timestamp)
+            else {
+                $before = $gpsIdx;
+                break;
+            }
+        }
+        
+        // Estimate coordinates
+        if ($before !== null && $after !== null) {
+            // Interpolate between before and after
+            $beforeTime = $images[$before]['timestamp'];
+            $afterTime = $images[$after]['timestamp'];
+            $timeBetween = $afterTime - $beforeTime;
+            $timeFromBefore = $targetTime - $beforeTime;
+            $progress = $timeBetween > 0 ? $timeFromBefore / $timeBetween : 0;
+            $progress = max(0, min(1, $progress)); // Clamp to [0, 1]
+            
+            $beforeLat = $images[$before]['latitude'];
+            $beforeLng = $images[$before]['longitude'];
+            $afterLat = $images[$after]['latitude'];
+            $afterLng = $images[$after]['longitude'];
+            
+            $estimatedLat = $beforeLat + ($afterLat - $beforeLat) * $progress;
+            $estimatedLng = $beforeLng + ($afterLng - $beforeLng) * $progress;
+            
+            $images[$idx]['latitude']  = round($estimatedLat, 7);
+            $images[$idx]['longitude'] = round($estimatedLng, 7);
+            $images[$idx]['has_gps']   = true;
+            $images[$idx]['gps_estimated'] = true;
+            
+            error_log("GPS Interpolation SUCCESS for {$targetImg['original_name']}: lat={$estimatedLat}, lng={$estimatedLng}");
+        } elseif ($before !== null) {
+            // Use coordinates from closest before image
+            $images[$idx]['latitude']  = $images[$before]['latitude'];
+            $images[$idx]['longitude'] = $images[$before]['longitude'];
+            $images[$idx]['has_gps']   = true;
+            $images[$idx]['gps_estimated'] = true;
+            
+            error_log("GPS Estimation (before) SUCCESS for {$targetImg['original_name']}: using coordinates from earlier image");
+        } elseif ($after !== null) {
+            // Use coordinates from closest after image
+            $images[$idx]['latitude']  = $images[$after]['latitude'];
+            $images[$idx]['longitude'] = $images[$after]['longitude'];
+            $images[$idx]['has_gps']   = true;
+            $images[$idx]['gps_estimated'] = true;
+            
+            error_log("GPS Estimation (after) SUCCESS for {$targetImg['original_name']}: using coordinates from later image");
+        }
+    }
+}
+
 function readImageExifData(string $filePath, string $originalFilename = ''): array {
     $result = [
         'has_gps'   => false,
@@ -313,6 +409,9 @@ usort($images, function (array $a, array $b): int {
     $tb = $b['timestamp'] ?? PHP_INT_MAX;
     return $ta <=> $tb;
 });
+
+// Estimate GPS coordinates for images without GPS but with date/time
+estimateGpsCoordinates($images);
 
 echo json_encode([
     'success' => true,
