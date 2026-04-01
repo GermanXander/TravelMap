@@ -300,7 +300,7 @@ $statsIcons = [
     </script>
 
     <script src="<?= ASSETS_URL ?>/vendor/jquery/jquery-3.7.1.min.js"></script>
-    
+
     <?php if ($mapRenderer === 'leaflet'): ?>
     <script src="<?= ASSETS_URL ?>/vendor/leaflet/js/leaflet.js"></script>
     <script src="<?= ASSETS_URL ?>/vendor/leaflet/plugins/leaflet.markercluster.js"></script>
@@ -309,6 +309,10 @@ $statsIcons = [
     <script src="<?= ASSETS_URL ?>/vendor/supercluster/supercluster.min.js"></script>
     <script src="<?= ASSETS_URL ?>/vendor/deckgl/deck.gl.min.js"></script>
     <?php endif; ?>
+
+    <script>const PHP_TRANSLATIONS = <?= $lang->getTranslationsAsJson() ?>;</script>
+    <script src="<?= ASSETS_URL ?>/js/i18n.js?v=<?php echo $version; ?>"></script>
+    <script>i18n.init();</script>
 
     <script src="<?= ASSETS_URL ?>/js/map-config.js?v=<?php echo $version; ?>"></script>
     <script src="<?= ASSETS_URL ?>/js/map-renderer.js?v=<?php echo $version; ?>"></script>

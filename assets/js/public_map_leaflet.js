@@ -287,29 +287,6 @@
         'aerial': { color: '#E91E63', icon: transportIcons.aerial, dashArray: '10, 5' }
     };
 
-    // Iconos por tipo de punto
-    const pointTypeConfig = {
-        'stay': {
-            emoji: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4V20C3 20.9428 3 21.4142 3.29289 21.7071C3.58579 22 4.05719 22 5 22H19C19.9428 22 20.4142 22 20.7071 21.7071C21 21.4142 21 20.9428 21 20V4"/><path d="M10.5 8V9.5M10.5 11V9.5M13.5 8V9.5M13.5 11V9.5M10.5 9.5H13.5"/><path d="M14 22L14 17.9999C14 16.8954 13.1046 15.9999 12 15.9999C10.8954 15.9999 10 16.8954 10 17.9999V22"/><path d="M2 4H8C8.6399 2.82727 10.1897 2 12 2C13.8103 2 15.3601 2.82727 16 4H22"/><path d="M6 8H7M6 12H7M6 16H7"/><path d="M17 8H18M17 12H18M17 16H18"/></svg>',
-            labelKey: 'map.point_type_stay',
-            label: __('map.point_type_stay'),
-            color: '#FF6B6B'
-        },
-        'visit': {
-            emoji: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.31253 4.7812L7.6885 4.36517V4.36517L8.31253 4.7812ZM7.5 6V6.75C7.75076 6.75 7.98494 6.62467 8.12404 6.41603L7.5 6ZM2.17224 8.83886L1.45453 8.62115L2.17224 8.83886ZM4.83886 6.17224L4.62115 5.45453H4.62115L4.83886 6.17224ZM3.46243 20.092L3.93822 19.5123L3.93822 19.5123L3.46243 20.092ZM2.90796 19.5376L3.48772 19.0618L3.48772 19.0618L2.90796 19.5376ZM21.092 19.5376L20.5123 19.0618L20.5123 19.0618L21.092 19.5376ZM20.5376 20.092L20.0618 19.5123L20.0618 19.5123L20.5376 20.092ZM14.0195 3.89791C14.3847 4.09336 14.8392 3.95575 15.0346 3.59054C15.2301 3.22534 15.0924 2.77084 14.7272 2.57539L14.0195 3.89791ZM22.5455 8.62115C22.4252 8.22477 22.0064 8.00092 21.61 8.12116C21.2137 8.2414 20.9898 8.6602 21.1101 9.05658L22.5455 8.62115ZM21.25 11.5V13.5H22.75V11.5H21.25ZM14.5 20.25H9.5V21.75H14.5V20.25ZM2.75 13.5V11.5H1.25V13.5H2.75ZM12.3593 2.25H11.6407V3.75H12.3593V2.25ZM7.6885 4.36517L6.87596 5.58397L8.12404 6.41603L8.93657 5.19722L7.6885 4.36517ZM11.6407 2.25C11.1305 2.25 10.6969 2.24925 10.3369 2.28282C9.96142 2.31783 9.61234 2.39366 9.27276 2.57539L9.98055 3.89791C10.0831 3.84299 10.2171 3.80049 10.4762 3.77634C10.7506 3.75075 11.1031 3.75 11.6407 3.75V2.25ZM8.93657 5.19722C9.23482 4.74985 9.43093 4.45704 9.60448 4.24286C9.76825 4.04074 9.87794 3.95282 9.98055 3.89791L9.27276 2.57539C8.93318 2.75713 8.67645 3.00553 8.43904 3.29853C8.2114 3.57947 7.97154 3.94062 7.6885 4.36517L8.93657 5.19722ZM2.75 11.5C2.75 10.0499 2.75814 9.49107 2.88994 9.05657L1.45453 8.62115C1.24186 9.32224 1.25 10.159 1.25 11.5H2.75ZM7.5 5.25C6.159 5.25 5.32224 5.24186 4.62115 5.45453L5.05657 6.88994C5.49107 6.75814 6.04987 6.75 7.5 6.75V5.25ZM2.88994 9.05657C3.20503 8.01787 4.01787 7.20503 5.05657 6.88994L4.62115 5.45453C3.10304 5.91505 1.91505 7.10304 1.45453 8.62115L2.88994 9.05657ZM9.5 20.25C7.83789 20.25 6.65724 20.2488 5.75133 20.1417C4.86197 20.0366 4.33563 19.8384 3.93822 19.5123L2.98663 20.6718C3.69558 21.2536 4.54428 21.5095 5.57525 21.6313C6.58966 21.7512 7.87463 21.75 9.5 21.75V20.25ZM1.25 13.5C1.25 15.1254 1.24877 16.4103 1.36868 17.4248C1.49054 18.4557 1.74638 19.3044 2.3282 20.0134L3.48772 19.0618C3.16158 18.6644 2.96343 18.138 2.85831 17.2487C2.75123 16.3428 2.75 15.1621 2.75 13.5H1.25ZM3.93822 19.5123C3.77366 19.3772 3.62277 19.2263 3.48772 19.0618L2.3282 20.0134C2.52558 20.2539 2.74612 20.4744 2.98663 20.6718L3.93822 19.5123ZM21.25 13.5C21.25 15.1621 21.2488 16.3428 21.1417 17.2487C21.0366 18.138 20.8384 18.6644 20.5123 19.0618L21.6718 20.0134C22.2536 19.3044 22.5095 18.4557 22.6313 17.4248C22.7512 16.4103 22.75 15.1254 22.75 13.5H21.25ZM14.5 21.75C16.1254 21.75 17.4103 21.7512 18.4248 21.6313C19.4557 21.5095 20.3044 21.2536 21.0134 20.6718L20.0618 19.5123C19.6644 19.8384 19.138 20.0366 18.2487 20.1417C17.3428 20.2488 16.1621 20.25 14.5 20.25V21.75ZM20.5123 19.0618C20.3772 19.2263 20.2263 19.3772 20.0618 19.5123L21.0134 20.6718C21.2539 20.4744 21.4744 20.2539 21.6718 20.0134L20.5123 19.0618ZM12.3593 3.75C12.8969 3.75 13.2494 3.75075 13.5238 3.77634C13.7829 3.80049 13.9169 3.84299 14.0195 3.89791L14.7272 2.57539C14.3877 2.39366 14.0386 2.31783 13.6631 2.28282C13.3031 2.24925 12.8695 2.25 12.3593 2.25V3.75ZM22.75 11.5C22.75 10.159 22.7581 9.32224 22.5455 8.62115L21.1101 9.05658C21.2419 9.49107 21.25 10.0499 21.25 11.5H22.75Z" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="4" stroke="currentColor" fill="none"/><path d="M17.9737 3.02148C17.9795 2.99284 18.0205 2.99284 18.0263 3.02148C18.3302 4.50808 19.4919 5.66984 20.9785 5.97368C21.0072 5.97954 21.0072 6.02046 20.9785 6.02632C19.4919 6.33016 18.3302 7.49192 18.0263 8.97852C18.0205 9.00716 17.9795 9.00716 17.9737 8.97852C17.6698 7.49192 16.5081 6.33016 15.0215 6.02632C14.9928 6.02046 14.9928 5.97954 15.0215 5.97368C16.5081 5.66984 17.6698 4.50808 17.9737 3.02148Z" fill="currentColor" stroke="none"/></svg>',
-            labelKey: 'map.point_type_visit',
-            label: __('map.point_type_visit'),
-            color: '#4ECDC4',
-            darkText: true
-        },
-        'food': {
-            emoji: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 17C18.2386 17 16 14.7614 16 12C16 9.23858 18.2386 7 21 7"/><path d="M21 21C16.0294 21 12 16.9706 12 12C12 7.02944 16.0294 3 21 3"/><path d="M6 3L6 8M6 21L6 11"/><path d="M3.5 8H8.5"/><path d="M9 3L9 7.35224C9 12.216 3 12.2159 3 7.35207L3 3"/></svg>',
-            labelKey: 'map.point_type_food',
-            label: __('map.point_type_food'),
-            color: '#FFE66D',
-            darkText: true
-        }
-    };
 
     /**
      * Carga la configuración desde el servidor
@@ -1167,19 +1144,7 @@
      * Renderiza un punto de interés
      */
     function renderPoint(point, trip) {
-        const typeConfig = pointTypeConfig[point.type] || pointTypeConfig['visit'];
-
-        // Icono personalizado
-        const iconColor = typeConfig.darkText ? 'color: #000; stroke: #000;' : '';
-        const icon = L.divIcon({
-            className: 'custom-point-marker',
-            html: `<div class="point-marker-inner" style="background-color: ${typeConfig.color}; border-color: ${trip.color};">
-                        <span style="${iconColor}">${typeConfig.emoji}</span>
-                   </div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 36],
-            popupAnchor: [0, -36]
-        });
+        const icon = MapRenderer.createLeafletPointIcon(point, trip.color);
 
         const marker = L.marker([point.latitude, point.longitude], {
             icon: icon,
@@ -1187,97 +1152,18 @@
         });
 
         // Popup con información completa
-        const popupContent = createPointPopup(point, trip, typeConfig);
-        marker.bindPopup(popupContent, {
-            maxWidth: 360,
-            className: 'custom-popup'
-        });
+        marker.bindPopup(MapRenderer.createPoiPopup(point, {
+            tripColor:       trip.color,
+            tripTitle:       trip.title,
+            tripTags:        trip.tags,
+            tripTagsEnabled: appConfig && appConfig.tripTagsEnabled
+        }), { maxWidth: 360, className: 'custom-popup' });
 
         // Add to global cluster and track in simple array
         allPointsCluster.addLayer(marker);
         pointsClusters[trip.id].push(marker);
     }
 
-    /**
-     * Crea el contenido HTML del popup de un punto
-     */
-    function createPointPopup(point, trip, typeConfig) {
-        let html = '<div class="point-popup">';
-
-        // Imagen si existe (clicable para abrir lightbox)
-        // Usar thumbnail para mostrar en popup, full image para lightbox
-        if (point.image_url) {
-            const displayImage = point.thumbnail_url || point.image_url;
-            html += `<img src="${displayImage}" alt="${escapeHtml(point.title)}" class="popup-image" onclick="openLightbox('${escapeJsString(point.image_url)}', '${escapeJsString(point.title)}')" title="${__('map.click_to_view_full')}">`;
-        }
-
-        // Contenido
-        html += '<div class="popup-content">';
-
-        // Título
-        html += `<h6 class="popup-title">${escapeHtml(point.title)}</h6>`;
-
-        // Badge del tipo
-        const typeLabel = typeConfig.labelKey ? __(typeConfig.labelKey) : typeConfig.label;
-        const textColor = typeConfig.darkText ? 'color: #000; --bs-badge-color: #000;' : '';
-        html += `<span class="badge mb-2" style="background-color: ${typeConfig.color}; ${textColor} display: inline-flex; align-items: center; gap: 4px;">${typeConfig.emoji} <span>${typeLabel}</span></span>`;
-
-        // Viaje
-        html += `<p class="popup-trip mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-map me-1" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.5.5 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103M10 1.91l-4-.8v12.98l4 .8zm1 12.98 4-.8V1.11l-4 .8zm-6-.8V1.11l-4 .8v12.98z"/>
-                    </svg>
-                    <span style="color: ${trip.color}; font-weight: bold;">${escapeHtml(trip.title)}</span>
-                 </p>`;
-
-        // Tags del viaje
-        if (appConfig?.tripTagsEnabled && trip.tags && trip.tags.length > 0) {
-            html += '<div class="mb-2 d-flex gap-1 flex-wrap">';
-            trip.tags.forEach(tag => {
-                html += `<span class="badge bg-light text-dark border" style="font-size: 0.65em;">${escapeHtml(tag)}</span>`;
-            });
-            html += '</div>';
-        }
-
-        // Fecha
-        if (point.visit_date) {
-            html += `<p class="popup-date mb-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-calendar-event me-1" viewBox="0 0 16 16">
-                            <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
-                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-                        </svg>
-                        ${formatDate(point.visit_date)}
-                     </p>`;
-        }
-
-        // Descripción
-        if (point.description) {
-            html += `<p class="popup-description">${escapeHtml(point.description)}</p>`;
-        }
-
-        // External links
-        if (point.links && point.links.length > 0) {
-            html += '<div class="popup-links">';
-            point.links.forEach(function (link) {
-                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="${escapeHtml(link.color)}" viewBox="0 0 16 16">${link.svg_paths}</svg>`;
-                html += `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="popup-link-btn" title="${escapeHtml(link.label)}">${svg}</a>`;
-            });
-            html += '</div>';
-        }
-
-        // Coordenadas
-        html += `<p class="popup-coords">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-geo-alt me-1" viewBox="0 0 16 16">
-                        <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A32 32 0 0 1 8 14.58a32 32 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10"/>
-                        <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4m0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
-                    </svg>
-                    ${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}
-                 </p>`;
-
-        html += '</div></div>';
-
-        return html;
-    }
 
     /**
      * Ajusta la vista del mapa para mostrar todo el contenido
@@ -1618,10 +1504,6 @@
         return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
     }
 
-    function escapeJsString(text) {
-        if (!text) return '';
-        return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    }
 
     /**
      * Busca lugares usando Nominatim (OpenStreetMap)

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS poi_links (
                     'booking',
                     'airbnb',
                     'youtube',
+                    'wikipedia',
                     'other'
                 ) NOT NULL DEFAULT 'website',
     url         VARCHAR(500) NOT NULL,

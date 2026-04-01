@@ -47,24 +47,32 @@ header('Content-Type: text/html; charset=utf-8');
 
     <div class="info">
         <strong>ℹ️ Information:</strong> This script creates the <code>poi_links</code> table,
-        which stores typed external links (website, Google Maps, Instagram, etc.) for each Point of Interest.
+        which stores typed external links (website, Google Maps, Instagram, Wikipedia, etc.) for each Point of Interest.
+        If the table already exists, it checks that all required ENUM values are present and applies any missing ones.
     </div>
 
 <?php
+
+// Canonical ENUM values — keep in sync with PoiLink::TYPES and migration_poi_links.sql
+const REQUIRED_ENUM_VALUES = [
+    'website', 'google_maps', 'instagram', 'facebook',
+    'twitter', 'tripadvisor', 'booking', 'airbnb',
+    'youtube', 'wikipedia', 'other',
+];
 
 try {
     $conn = getDB();
 
     echo "<h3>Checking database status...</h3>";
 
-    // Check if table already exists
-    $stmt  = $conn->query("SHOW TABLES LIKE 'poi_links'");
+    // ── Step 1: create table if it doesn't exist ──────────────────────────────
+    $stmt   = $conn->query("SHOW TABLES LIKE 'poi_links'");
     $exists = $stmt->rowCount() > 0;
 
     if ($exists) {
         echo '<div class="info">';
         echo '<strong>✓ Table <code>poi_links</code> already exists.</strong><br>';
-        echo 'No changes were made.';
+        echo 'Skipping table creation.';
         echo '</div>';
     } else {
         echo "<p>Creating table <code>poi_links</code>...</p>";
@@ -78,6 +86,43 @@ try {
 
         echo '<div class="success">';
         echo '<strong>✓ Table <code>poi_links</code> created successfully!</strong>';
+        echo '</div>';
+    }
+
+    // ── Step 2: ensure all ENUM values are present (idempotent ALTER) ─────────
+    echo "<h3>Checking ENUM values...</h3>";
+
+    $row        = $conn->query("
+        SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME   = 'poi_links'
+          AND COLUMN_NAME  = 'link_type'
+    ")->fetch(PDO::FETCH_ASSOC);
+
+    // Parse current ENUM values from the COLUMN_TYPE string
+    // e.g. "enum('website','google_maps',...)"
+    preg_match_all("/'([^']+)'/", $row['COLUMN_TYPE'], $matches);
+    $currentValues = $matches[1];
+
+    $missing = array_diff(REQUIRED_ENUM_VALUES, $currentValues);
+
+    if (empty($missing)) {
+        echo '<div class="info">';
+        echo '<strong>✓ All ENUM values are present.</strong> No ALTER needed.';
+        echo '</div>';
+    } else {
+        echo '<p>Missing ENUM values: <code>' . implode(', ', $missing) . '</code>. Running ALTER TABLE...</p>';
+
+        // Rebuild the full ENUM in the correct order (other always last)
+        $newEnum = "ENUM('" . implode("','", REQUIRED_ENUM_VALUES) . "')";
+
+        $conn->exec("
+            ALTER TABLE poi_links
+            MODIFY COLUMN link_type {$newEnum} NOT NULL DEFAULT 'website'
+        ");
+
+        echo '<div class="success">';
+        echo '<strong>✓ ENUM updated successfully!</strong> Added: <code>' . implode(', ', $missing) . '</code>';
         echo '</div>';
     }
 

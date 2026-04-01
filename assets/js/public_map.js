@@ -101,7 +101,6 @@
     const transportIcons  = MapConfig.transportIcons;
     const transportConfig = MapConfig.transportConfig; // mutable — server colors applied below
     const pointTypeIcons  = MapConfig.pointTypeIcons;
-    const pointTypeConfig = MapConfig.pointTypeConfig;
 
     // SVG icons for stats (page-specific, not shared)
     const statsIcons = {
@@ -716,7 +715,6 @@
             } else {
                 // Individual point marker with icon
                 const point = feature.properties;
-                const typeConfig = pointTypeConfig[point.type] || pointTypeConfig['visit'];
                 const el = MapRenderer.createPointMarkerEl(point);
 
                 const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -726,9 +724,13 @@
                 // Click to show popup
                 el.addEventListener('click', function (e) {
                     e.stopPropagation(); // Prevent map click from closing popup
-                    const popupContent = createPointPopup(point, typeConfig);
                     popup.setLngLat(coords)
-                        .setHTML(popupContent)
+                        .setHTML(MapRenderer.createPoiPopup(point, {
+                            tripColor:       point.tripColor,
+                            tripTitle:       point.tripTitle,
+                            tripTags:        point.tripTags,
+                            tripTagsEnabled: appConfig && appConfig.tripTagsEnabled
+                        }))
                         .addTo(map);
                 });
 
@@ -747,61 +749,6 @@
         pointMarkers = [];
     }
 
-    /**
-     * Create popup HTML for a point
-     */
-    function createPointPopup(point, typeConfig) {
-        let html = '<div class="point-popup">';
-
-        if (point.image_url) {
-            const displayImage = point.thumbnail_url || point.image_url;
-            html += `<img src="${displayImage}" alt="${escapeHtml(point.title)}" class="popup-image" onclick="openLightbox('${escapeJsString(point.image_url)}', '${escapeJsString(point.title)}')" title="${__('map.click_to_view_full')}">`;
-        }
-
-        html += '<div class="popup-content">';
-        html += `<h6 class="popup-title">${escapeHtml(point.title)}</h6>`;
-
-        const typeLabel = typeConfig.labelKey ? __(typeConfig.labelKey) : typeConfig.label;
-        const textColor = typeConfig.darkText ? 'color: #000; --bs-badge-color: #000;' : '';
-        html += `<span class="badge mb-2 d-inline-flex align-items-center gap-1" style="background-color: ${typeConfig.color}; ${textColor}">${typeConfig.icon} ${typeLabel}</span>`;
-
-        html += `<p class="popup-trip mb-1"><span style="color: ${point.tripColor}; font-weight: bold;">${escapeHtml(point.tripTitle)}</span></p>`;
-
-        // Tags del viaje
-        if (appConfig?.tripTagsEnabled && point.tripTags && point.tripTags.length > 0) {
-            html += '<div class="mb-2 d-flex gap-1 flex-wrap">';
-            point.tripTags.forEach(tag => {
-                html += `<span class="badge bg-light text-dark border" style="font-size: 0.65em;">${escapeHtml(tag)}</span>`;
-            });
-            html += '</div>';
-        }
-
-        if (point.visit_date) {
-            html += `<p class="popup-date mb-1">${formatDate(point.visit_date)}</p>`;
-        }
-
-        if (point.description) {
-            html += `<p class="popup-description">${escapeHtml(point.description)}</p>`;
-        }
-
-        // External links
-        if (point.links && point.links.length > 0) {
-            html += '<div class="popup-links">';
-            point.links.forEach(function (link) {
-                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="${escapeHtml(link.color)}" viewBox="0 0 16 16">${link.svg_paths}</svg>`;
-                html += `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="popup-link-btn" title="${escapeHtml(link.label)}">${svg}</a>`;
-            });
-            html += '</div>';
-        }
-
-        // Use original coordinates if available (in case of offset for co-located points)
-        const displayLat = point.originalLat !== undefined ? point.originalLat : point.latitude;
-        const displayLon = point.originalLon !== undefined ? point.originalLon : point.longitude;
-        html += `<p class="popup-coords">${displayLat.toFixed(6)}, ${displayLon.toFixed(6)}</p>`;
-        html += '</div></div>';
-
-        return html;
-    }
 
     /**
      * Check if trip is in the future
@@ -1399,10 +1346,6 @@
      */
     function showShareError() {
         alert(__('map.copy_failed'));
-    }
-    function escapeJsString(text) {
-        if (!text) return '';
-        return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
     // ==================== SEARCH ====================
 

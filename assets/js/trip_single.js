@@ -98,25 +98,12 @@ function initMapLibre() {
                 } else {
                     const point = feature.properties;
                     const el    = MapRenderer.createPointMarkerEl(point);
-                    el.addEventListener('click', e => {
-                        e.stopPropagation();
-                        popup.setLngLat(coords)
-                            .setHTML(`
-                                <div style="padding:4px 2px;">
-                                    <strong>${point.title}</strong>
-                                    ${point.visit_date ? `<br><small style="color:#64748b">${new Date(point.visit_date.replace(' ', 'T')).toLocaleDateString()}</small>` : ''}
-                                </div>
-                            `)
-                            .addTo(map);
-                    });
 
                     const markerPopup = new maplibregl.Popup({ offset: 25, closeButton: false })
-                        .setHTML(`
-                            <div style="padding:4px 2px;">
-                                <strong>${point.title}</strong>
-                                ${point.visit_date ? `<br><small style="color:#64748b">${new Date(point.visit_date).toLocaleDateString()}</small>` : ''}
-                            </div>
-                        `);
+                        .setHTML(MapRenderer.createPoiPopup(point, {
+                            showImage: false,
+                            tripColor: TRIP_DATA.color
+                        }));
 
                     const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
                         .setLngLat(coords)
@@ -258,42 +245,27 @@ function initLeaflet() {
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
-        zoomToBoundsOnClick: true
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: function (cluster) {
+            return MapRenderer.createLeafletClusterIcon(cluster.getChildCount());
+        }
     });
 
     TRIP_DATA.points.forEach(point => {
         if (!point.latitude || !point.longitude) return;
 
-        const icon = L.divIcon({
-            className: 'custom-div-icon',
-            html: `<div style="
-                background-color: ${TRIP_DATA.color || '#3388ff'};
-                width: 12px;
-                height: 12px;
-                border: 2px solid white;
-                border-radius: 50%;
-                box-shadow: 0 0 4px rgba(0,0,0,0.3);
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-            "></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
-        });
+        const icon = MapRenderer.createLeafletPointIcon(point, TRIP_DATA.color);
 
-        const popupContent = point.visit_date 
-            ? `<strong>${point.title}</strong><br><small style="color:#64748b">${new Date(point.visit_date.replace(' ', 'T')).toLocaleDateString()}</small>`
-            : `<strong>${point.title}</strong>`;
-        
         const marker = L.marker([point.latitude, point.longitude], { icon: icon })
-            .bindPopup(popupContent);
+            .bindPopup(MapRenderer.createPoiPopup(point, {
+                showImage: false,
+                tripColor: TRIP_DATA.color
+            }), { maxWidth: 360, className: 'custom-popup' });
 
         marker.on('add', () => {
             if (String(point.id) === String(activeMarkerId)) {
                 const el = marker.getElement();
-                if (el) {
-                    const inner = el.querySelector('div');
-                    const color = TRIP_DATA.color || '#3b82f6';
-                    if (inner) { inner.style.transform = 'scale(1.7)'; inner.style.boxShadow = `0 0 0 3px ${color}, 0 4px 12px ${color}66`; }
-                }
+                if (el) el.classList.add('marker-selected');
             }
             if (String(point.id) === String(pendingPopupMarkerId)) {
                 marker.openPopup();
@@ -416,30 +388,13 @@ function initInteractions() {
 
             // Highlight active marker on map
             if (activeMarkerId && markers[activeMarkerId]) {
-                if (MAP_RENDERER === 'leaflet') {
-                    const prevEl = markers[activeMarkerId].getElement();
-                    if (prevEl) {
-                        const inner = prevEl.querySelector('div');
-                        if (inner) { inner.style.transform = ''; inner.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)'; }
-                    }
-                } else {
-                    const prevEl = markers[activeMarkerId].getElement();
-                    if (prevEl) prevEl.classList.remove('marker-selected');
-                }
+                const prevEl = markers[activeMarkerId].getElement();
+                if (prevEl) prevEl.classList.remove('marker-selected');
             }
             activeMarkerId = id;
             if (markers[id]) {
-                if (MAP_RENDERER === 'leaflet') {
-                    const curEl = markers[id].getElement();
-                    if (curEl) {
-                        const inner = curEl.querySelector('div');
-                        const color = TRIP_DATA.color || '#3b82f6';
-                        if (inner) { inner.style.transform = 'scale(1.7)'; inner.style.boxShadow = `0 0 0 3px ${color}, 0 4px 12px ${color}66`; }
-                    }
-                } else {
-                    const curEl = markers[id].getElement();
-                    if (curEl) curEl.classList.add('marker-selected');
-                }
+                const curEl = markers[id].getElement();
+                if (curEl) curEl.classList.add('marker-selected');
             }
 
             // Fly to map

@@ -162,12 +162,166 @@ window.MapRenderer = (function () {
         return overlay;
     }
 
+    // ── Leaflet helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Creates a Leaflet DivIcon for a single point marker, matching the MapLibre style.
+     * @param {{ type: string }} point
+     * @param {string} tripColor - Border/accent color from the trip
+     * @returns {L.DivIcon|null}
+     */
+    function createLeafletPointIcon(point, tripColor) {
+        if (typeof L === 'undefined') return null;
+        var cfg     = MapConfig.pointTypeConfig;
+        var typeCfg = cfg[point.type] || cfg['visit'];
+        var iconStyle = typeCfg.darkText ? 'color:#000;stroke:#000;' : '';
+        return L.divIcon({
+            className: 'custom-point-marker',
+            html: '<div class="point-marker-inner point-type-' + (point.type || 'visit') + '"'
+                + ' style="background-color:' + typeCfg.color + ';border-color:' + (tripColor || '#3388ff') + ';">'
+                + '<span class="point-icon" style="' + iconStyle + '">' + typeCfg.icon + '</span>'
+                + '</div>',
+            iconSize:    [36, 36],
+            iconAnchor:  [18, 36],
+            popupAnchor: [0, -36]
+        });
+    }
+
+    /**
+     * Creates a Leaflet DivIcon for a cluster marker, matching the MapLibre cluster style.
+     * @param {number} count
+     * @returns {L.DivIcon|null}
+     */
+    function createLeafletClusterIcon(count) {
+        if (typeof L === 'undefined') return null;
+        return L.divIcon({
+            html: '<div class="marker-cluster-custom"><span>' + count + '</span></div>',
+            className: 'custom-cluster-icon',
+            iconSize: L.point(40, 40)
+        });
+    }
+
+    // ── Popup utilities (private) ─────────────────────────────────────────────
+
+    function escapeHtml(text) {
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text ? text.replace(/[&<>"']/g, function (m) { return map[m]; }) : '';
+    }
+
+    function escapeJsString(text) {
+        if (!text) return '';
+        return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        var isoString = dateString;
+        if (dateString.indexOf(' ') !== -1) {
+            isoString = dateString.replace(' ', 'T');
+        } else if (dateString.indexOf('T') === -1) {
+            isoString = dateString + 'T00:00:00';
+        }
+        var date = new Date(isoString);
+        return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    /**
+     * Creates rich popup HTML for a POI.
+     * Single source of truth for popup content — used by both the public map and the trip detail page.
+     *
+     * @param {object} point - Point data: { title, description, type, latitude, longitude,
+     *                         image_url, thumbnail_url, visit_date, links, originalLat?, originalLon? }
+     * @param {object} [opts]
+     * @param {boolean} [opts.showImage=true]       - Show thumbnail (set false when image is shown elsewhere, e.g. carousel)
+     * @param {string}  [opts.tripColor]            - Trip accent color
+     * @param {string}  [opts.tripTitle]            - Trip title (omit when already on the trip page)
+     * @param {Array}   [opts.tripTags]             - Array of tag strings
+     * @param {boolean} [opts.tripTagsEnabled=false]
+     * @returns {string} HTML string
+     */
+    function createPoiPopup(point, opts) {
+        opts = opts || {};
+        var showImage       = opts.showImage !== false;
+        var tripColor       = opts.tripColor  || null;
+        var tripTitle       = opts.tripTitle  || null;
+        var tripTags        = opts.tripTags   || null;
+        var tripTagsEnabled = opts.tripTagsEnabled || false;
+
+        var t = function (key, fallback) {
+            return (typeof window.__ === 'function') ? window.__(key) : (fallback || '');
+        };
+
+        var typeConfig = MapConfig.pointTypeConfig[point.type] || MapConfig.pointTypeConfig['visit'];
+
+        var html = '<div class="point-popup">';
+
+        if (showImage && point.image_url) {
+            var displayImage = point.thumbnail_url || point.image_url;
+            html += '<img src="' + escapeHtml(displayImage) + '"'
+                  + ' alt="' + escapeHtml(point.title) + '"'
+                  + ' class="popup-image"'
+                  + ' onclick="openLightbox(\'' + escapeJsString(point.image_url) + '\',\'' + escapeJsString(point.title) + '\')"'
+                  + ' title="' + t('map.click_to_view_full', '') + '">';
+        }
+
+        html += '<div class="popup-content">';
+        html += '<h6 class="popup-title">' + escapeHtml(point.title) + '</h6>';
+
+        var typeLabel = typeConfig.labelKey ? t(typeConfig.labelKey, point.type) : (typeConfig.label || point.type);
+        var textColor = typeConfig.darkText ? 'color: #000; --bs-badge-color: #000;' : '';
+        html += '<span class="badge mb-2 d-inline-flex align-items-center gap-1"'
+              + ' style="background-color: ' + typeConfig.color + '; ' + textColor + '">'
+              + typeConfig.icon + ' ' + typeLabel + '</span>';
+
+        if (tripTitle) {
+            html += '<p class="popup-trip mb-1"><span style="color: ' + escapeHtml(tripColor || 'inherit') + '; font-weight: bold;">'
+                  + escapeHtml(tripTitle) + '</span></p>';
+        }
+
+        if (tripTagsEnabled && tripTags && tripTags.length > 0) {
+            html += '<div class="mb-2 d-flex gap-1 flex-wrap">';
+            tripTags.forEach(function (tag) {
+                html += '<span class="badge bg-light text-dark border" style="font-size: 0.65em;">' + escapeHtml(tag) + '</span>';
+            });
+            html += '</div>';
+        }
+
+        if (point.visit_date) {
+            html += '<p class="popup-date mb-1">' + formatDate(point.visit_date) + '</p>';
+        }
+
+        if (point.description) {
+            html += '<p class="popup-description">' + escapeHtml(point.description) + '</p>';
+        }
+
+        if (point.links && point.links.length > 0) {
+            html += '<div class="popup-links">';
+            point.links.forEach(function (link) {
+                var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"'
+                        + ' fill="' + escapeHtml(link.color) + '" viewBox="0 0 16 16">' + link.svg_paths + '</svg>';
+                html += '<a href="' + escapeHtml(link.url) + '" target="_blank" rel="noopener noreferrer"'
+                      + ' class="popup-link-btn" title="' + escapeHtml(link.label) + '">' + svg + '</a>';
+            });
+            html += '</div>';
+        }
+
+        var displayLat = (point.originalLat !== undefined) ? point.originalLat : point.latitude;
+        var displayLon = (point.originalLon !== undefined) ? point.originalLon : point.longitude;
+        html += '<p class="popup-coords">' + parseFloat(displayLat).toFixed(6) + ', ' + parseFloat(displayLon).toFixed(6) + '</p>';
+
+        html += '</div></div>';
+        return html;
+    }
+
     // ── Public API ────────────────────────────────────────────────────────────
 
     return {
-        createClusterMarkerEl: createClusterMarkerEl,
-        createPointMarkerEl:   createPointMarkerEl,
-        addRouteLayer:         addRouteLayer,
-        renderFlightArcs:      renderFlightArcs
+        createClusterMarkerEl:   createClusterMarkerEl,
+        createPointMarkerEl:     createPointMarkerEl,
+        addRouteLayer:           addRouteLayer,
+        renderFlightArcs:        renderFlightArcs,
+        createPoiPopup:          createPoiPopup,
+        createLeafletPointIcon:  createLeafletPointIcon,
+        createLeafletClusterIcon: createLeafletClusterIcon
     };
 }());
