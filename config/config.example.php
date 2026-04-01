@@ -21,7 +21,7 @@ define('ROOT_PATH', dirname(__DIR__));
 //   Local XAMPP:   '/TravelMap'
 //   Producción:    ''   (si está en la raíz del dominio)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-$host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
 $folder   = '/TravelMap'; // <-- CAMBIAR AQUÍ
 
 define('BASE_URL', $protocol . '://' . $host . $folder);
