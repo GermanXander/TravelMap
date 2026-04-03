@@ -123,7 +123,12 @@ INSERT INTO settings (setting_key, setting_value, setting_type, description) VAL
 ('site_favicon', '', 'string', 'URL del favicon (ejemplo: /TravelMap/uploads/favicon.ico)'),
 ('site_analytics_code', '', 'string', 'Código de Google Analytics u otro script de análisis'),
 ('trip_tags_enabled', 'true', 'boolean', 'Habilitar sistema de etiquetas en los viajes'),
-('distance_unit', 'km', 'string', 'Unidad de distancia preferida (km para Kilómetros, mi para Millas)');
+('distance_unit', 'km', 'string', 'Unidad de distancia preferida (km para Kilómetros, mi para Millas)'),
+('default_language', 'en', 'string', 'Idioma por defecto del sitio (en, es, etc.)'),
+('map_style', 'voyager', 'string', 'Estilo del mapa base (positron, voyager, dark-matter, osm-liberty)'),
+('thumbnail_max_width', '400', 'number', 'Ancho máximo de miniaturas en píxeles'),
+('thumbnail_max_height', '300', 'number', 'Alto máximo de miniaturas en píxeles'),
+('thumbnail_quality', '80', 'number', 'Calidad de compresión JPEG para miniaturas (0-100)');
 
 -- ============================================
 -- Datos iniciales (opcional)
@@ -171,4 +176,36 @@ CREATE TABLE IF NOT EXISTS geocode_cache (
     UNIQUE KEY unique_coords (latitude, longitude),
     KEY idx_expires (expires_at),
     KEY idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Tabla: poi_links
+-- Descripción: Links externos tipificados para puntos de interés
+-- ============================================
+CREATE TABLE IF NOT EXISTS poi_links (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    poi_id     INT UNSIGNED NOT NULL,
+    link_type  ENUM(
+                   'website', 'google_maps', 'instagram', 'facebook',
+                   'twitter', 'tripadvisor', 'booking', 'airbnb',
+                   'youtube', 'wikipedia', 'other'
+               ) NOT NULL DEFAULT 'website',
+    url        VARCHAR(500) NOT NULL,
+    label      VARCHAR(100) DEFAULT NULL,
+    sort_order TINYINT UNSIGNED DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (poi_id) REFERENCES points_of_interest(id) ON DELETE CASCADE,
+    INDEX idx_poi_id (poi_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Tabla: schema_migrations
+-- Descripción: Registro de migraciones aplicadas (gestionado por el instalador)
+-- ============================================
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    migration_id VARCHAR(200) NOT NULL UNIQUE,
+    description  VARCHAR(500),
+    applied_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_migration_id (migration_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -59,9 +59,14 @@ Aplicación web completa para crear y visualizar mapas interactivos de viajes co
 - **Tags para viajes**: 🏠 
   - Organización con tags
 - **Importador por coordenadas de BRouter**:
+- **Importador por coordenadas de OpenRail GPX**:
 - **Importador con imágenes por EXIF**:
   - Detección de coordenadas y fechas por EXIF
   - Detección de geolocalización y nombre de ciudad
+- **Instalador y actualizador**
+  -- Detección de cambios en la DB
+  -- Implementación de cambios
+  -- Upgrade de tablas modificadas
 
 ### Visualizador Público
 - **Mapa a Pantalla Completa**: Interfaz responsive con todos los viajes y puntos publicados
