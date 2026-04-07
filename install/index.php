@@ -32,11 +32,46 @@ if (empty($_SESSION['_csrf'])) {
 }
 
 // ── Autenticación del instalador ──────────────────────────────────────────────
-// Si db.php ya existe el sitio está instalado: exigir login antes de continuar.
+// Solo exigir login si db.php existe Y ya hay al menos un usuario creado.
+// Durante la instalación inicial (sin tablas o sin usuarios) se permite el acceso libre.
 (function () {
     $dbPhpPath = ROOT . '/config/db.php';
     if (!file_exists($dbPhpPath)) {
-        return; // Instalación nueva: sin protección aún
+        return; // Instalación nueva sin config: acceso libre
+    }
+
+    // Verificar si ya existe al menos un usuario en la BD.
+    // Usamos PDO directo (leyendo constantes via Reflection) para evitar el die()
+    // que tiene el constructor de Database en caso de fallo de conexión.
+    $hasUsers = false;
+    try {
+        if (!class_exists('Database', false)) {
+            // Incluir sin ejecutar getDB() — solo define la clase
+            require_once $dbPhpPath;
+        }
+        $ref  = new ReflectionClass('Database');
+        $host    = $ref->getConstant('DB_HOST');
+        $dbname  = $ref->getConstant('DB_NAME');
+        $user    = $ref->getConstant('DB_USER');
+        $pass    = $ref->getConstant('DB_PASS');
+        $charset = $ref->getConstant('DB_CHARSET');
+
+        $pdo = new PDO(
+            "mysql:host={$host};dbname={$dbname};charset={$charset}",
+            $user,
+            $pass,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5]
+        );
+        $stmt = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($stmt && $stmt->fetchColumn()) {
+            $hasUsers = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn() > 0;
+        }
+    } catch (Throwable $e) {
+        return; // Error de conexión o tablas inexistentes: dejar pasar para mostrar el error en la UI
+    }
+
+    if (!$hasUsers) {
+        return; // Sin usuarios: instalación incompleta, acceso libre
     }
 
     // Manejar logout del instalador
@@ -63,7 +98,6 @@ if (empty($_SESSION['_csrf'])) {
             $password = $_POST['password'] ?? '';
 
             try {
-                require_once $dbPhpPath;
                 $db   = getDB();
                 $stmt = $db->prepare('SELECT id, username, password_hash FROM users WHERE username = ? LIMIT 1');
                 $stmt->execute([$username]);
@@ -263,11 +297,11 @@ function writeDbConfig(string $host, string $name, string $user, string $pass, s
     $content = file_get_contents($example);
 
     $map = [
-        "/private const DB_HOST\s*=\s*'[^']*';"    => "private const DB_HOST    = '" . addslashes($host)    . "';",
-        "/private const DB_NAME\s*=\s*'[^']*';"    => "private const DB_NAME    = '" . addslashes($name)    . "';",
-        "/private const DB_USER\s*=\s*'[^']*';"    => "private const DB_USER    = '" . addslashes($user)    . "';",
-        "/private const DB_PASS\s*=\s*'[^']*';"    => "private const DB_PASS    = '" . addslashes($pass)    . "';",
-        "/private const DB_CHARSET\s*=\s*'[^']*';" => "private const DB_CHARSET = '" . addslashes($charset) . "';",
+        "/private const DB_HOST\s*=\s*'[^']*';/"    => "private const DB_HOST    = '" . addslashes($host)    . "';",
+        "/private const DB_NAME\s*=\s*'[^']*';/"    => "private const DB_NAME    = '" . addslashes($name)    . "';",
+        "/private const DB_USER\s*=\s*'[^']*';/"    => "private const DB_USER    = '" . addslashes($user)    . "';",
+        "/private const DB_PASS\s*=\s*'[^']*';/"    => "private const DB_PASS    = '" . addslashes($pass)    . "';",
+        "/private const DB_CHARSET\s*=\s*'[^']*';/" => "private const DB_CHARSET = '" . addslashes($charset) . "';",
     ];
     foreach ($map as $pattern => $replacement) {
         $content = preg_replace($pattern, $replacement, $content);
