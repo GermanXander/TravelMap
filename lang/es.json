@@ -36,6 +36,7 @@
     "trip_name_placeholder": "Nombre del nuevo viaje",
     "transport_type": "Tipo de transporte",
     "gpx_file": "Archivo GPX",
+    "import_waypoints": "Importar waypoints como puntos de interés",
     "drop_here": "Arrastra el archivo GPX aquí o haz clic para explorar",
     "only_gpx": "Solo archivos con extensión .gpx",
     "no_files": "Ningún archivo seleccionado",

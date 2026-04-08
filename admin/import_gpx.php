@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $existing_trip_id = $_POST['existing_trip_id'] ?? null;
     $new_trip_name = trim($_POST['new_trip_name'] ?? '');
     $transport_type = $_POST['transport_type'] ?? 'car';
+    $import_waypoints = isset($_POST['import_waypoints']);
 
     if ($trip_choice === 'existing' && empty($existing_trip_id)) {
         $error = __('import_gpx.error_no_trip');
@@ -84,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $wpt_count = 0;
                     $trk_count = 0;
 
-                    if (isset($xml->wpt)) {
+                    if ($import_waypoints && isset($xml->wpt)) {
                         foreach ($xml->wpt as $wpt) {
                             $lat = (float)$wpt['lat'];
                             $lon = (float)$wpt['lon'];
@@ -250,6 +251,16 @@ require_once __DIR__ . '/../includes/header.php';
                             <input type="file" id="fileInput" name="gpx_file" accept=".gpx" class="d-none">
                             <p id="fileCount" class="mb-0 small text-muted"><?= __('import_gpx.no_files') ?></p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Checkbox import waypoints -->
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="import_waypoints" name="import_waypoints" value="1" checked>
+                        <label class="form-check-label" for="import_waypoints">
+                            <?= __('import_gpx.import_waypoints') ?? 'Importar waypoints como puntos de interés' ?>
+                        </label>
                     </div>
                 </div>
 

@@ -36,6 +36,7 @@
     "trip_name_placeholder": "Name of new trip",
     "transport_type": "Transport type",
     "gpx_file": "GPX file",
+    "import_waypoints": "Import waypoints as points of interest",
     "drop_here": "Drag the GPX file here or click to browse",
     "only_gpx": "Only .gpx files",
     "no_files": "No file selected",
