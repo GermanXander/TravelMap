@@ -36,6 +36,10 @@ define('SRC_PATH',     ROOT_PATH . '/src');
 define('ASSETS_URL',  BASE_URL . '/assets');
 define('UPLOADS_URL', BASE_URL . '/uploads');
 
+// API Key de GraphHopper (obtener en https://www.graphhopper.com/)
+// Plan gratuito: máximo 5 puntos por request
+define('GRAPHHOPPER_API_KEY', 'YOUR_GRAPHHOPPER_API_KEY_HERE');
+
 // Valores por defecto (se sobreescriben desde la BD si está disponible)
 $defaultTimezone          = 'America/Argentina/Buenos_Aires';
 $defaultMaxUploadSize     = 8 * 1024 * 1024; // 8MB

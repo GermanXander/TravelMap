@@ -253,6 +253,11 @@ if ($tripTagsEnabled) {
                                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                                 </svg>
                                             </a>
+                                            <button type="button" class="btn btn-icon btn-sm btn-outline-info border" title="<?= __('map.create_route_from_poi') ?>" onclick="showCreateRouteFromPOIModal(<?= $trip['id'] ?>)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" class="bi bi-signpost-split">
+                                                    <path d="M7 7V1.414a1 1 0 0 1 2 0V2h5a1 1 0 0 1 .8.4l.975 1.3a.5.5 0 0 1 0 .6L14.8 5.6a1 1 0 0 1-.8.4H9v10H7v-5H2a1 1 0 0 1-.8-.4L.225 9.3a.5.5 0 0 1 0-.6L1.2 7.4A1 1 0 0 1 2 7h5zm1 3V8H2l-.75 1L2 10h6zm0-5h6l.75-1L14 3H8v2z"/>
+                                                </svg>
+                                            </button>
                                             <a href="?delete=<?= $trip['id'] ?>" class="btn btn-icon btn-sm btn-outline-danger btn-delete" title="<?= __('common.delete') ?>">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -302,5 +307,174 @@ if ($tripTagsEnabled) {
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Modal para seleccionar título de POI -->
+<div class="modal fade" id="poiTitleModal" tabindex="-1" aria-labelledby="poiTitleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="poiTitleModalLabel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-signpost-split me-2" viewBox="0 0 16 16">
+                        <path d="M7 7V1.414a1 1 0 0 1 2 0V2h5a1 1 0 0 1 .8.4l.975 1.3a.5.5 0 0 1 0 .6L14.8 5.6a1 1 0 0 1-.8.4H9v10H7v-5H2a1 1 0 0 1-.8-.4L.225 9.3a.5.5 0 0 1 0-.6L1.2 7.4A1 1 0 0 1 2 7h5zm1 3V8H2l-.75 1L2 10h6zm0-5h6l.75-1L14 3H8v2z"/>
+                    </svg>
+                    <?= __('map.select_poi_title') ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small"><?= __('map.select_poi_title_desc') ?></p>
+                <div id="poiTitlesList" class="list-group">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div id="poiTitlesLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden"><?= __('common.loading') ?></span>
+                    </div>
+                    <p class="mt-2 text-muted"><?= __('common.loading') ?></p>
+                </div>
+                <div id="poiTitlesEmpty" class="text-center py-4" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-inbox text-muted mb-2" viewBox="0 0 16 16">
+                        <path d="M4.98 4a.5.5 0 0 0-.39.188L1.54 8H6a.5.5 0 0 1 .5.5 1.5 1.5 0 1 0 3 0A.5.5 0 0 1 10 8h4.46l-3.05-3.812A.5.5 0 0 0 11.02 4zm9.954 5H10.45a2.5 2.5 0 0 1-4.9 0H1.066l.32 2.562a.5.5 0 0 0 .497.438h12.234a.5.5 0 0 0 .496-.438zM3.809 3.563A1.5 1.5 0 0 1 4.981 3h6.038a1.5 1.5 0 0 1 1.172.563l3.7 4.625a.5.5 0 0 1 .105.374l-.39 3.124A1.5 1.5 0 0 1 14.117 13H1.883a1.5 1.5 0 0 1-1.489-1.314l-.39-3.124a.5.5 0 0 1 .106-.373z"/>
+                    </svg>
+                    <p class="text-muted"><?= __('map.no_poi_groups') ?></p>
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="roundTripCheckbox">
+                    <label class="form-check-label" for="roundTripCheckbox">
+                        <?= __('routes.is_round_trip') ?> (<?= __('map.return_to_start') ?>)
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de carga/generación de ruta -->
+<div class="modal fade" id="routeGeneratingModal" tabindex="-1" aria-labelledby="routeGeneratingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden"><?= __('common.loading') ?></span>
+                </div>
+                <h6><?= __('map.generating_route') ?></h6>
+                <p class="text-muted small mb-2"><?= __('map.generating_route_desc') ?></p>
+                <div class="progress mt-3" style="height: 20px;">
+                    <div id="routeProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+                <p id="routeProgressText" class="text-muted small mt-2 mb-0">Iniciando...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const BASE_URL = '<?= BASE_URL ?>';
+
+function showCreateRouteFromPOIModal(tripId) {
+    const modal = new bootstrap.Modal(document.getElementById('poiTitleModal'));
+    const listContainer = document.getElementById('poiTitlesList');
+    const loadingContainer = document.getElementById('poiTitlesLoading');
+    const emptyContainer = document.getElementById('poiTitlesEmpty');
+
+    listContainer.style.display = 'none';
+    emptyContainer.style.display = 'none';
+    loadingContainer.style.display = 'block';
+    modal.show();
+
+    fetch(BASE_URL + '/api/get_poi_titles.php?trip_id=' + tripId)
+        .then(response => response.json())
+        .then(data => {
+            loadingContainer.style.display = 'none';
+
+            if (data.success && data.data && data.data.length > 0) {
+                listContainer.innerHTML = '';
+                data.data.forEach(function (item) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    btn.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt me-2" viewBox="0 0 16 16"><path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A32 32 0 0 1 8 14.58a32 32 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10"/><path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4m0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>' + item.title + '</span><span class="badge bg-primary rounded-pill">' + item.point_count + ' <?= __('map.points') ?></span>';
+                    btn.onclick = function () {
+                        modal.hide();
+                        createRouteFromPOI(tripId, item.title);
+                    };
+                    listContainer.appendChild(btn);
+                });
+                listContainer.style.display = 'block';
+            } else {
+                emptyContainer.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            loadingContainer.style.display = 'none';
+            emptyContainer.style.display = 'block';
+            console.error('Error al cargar títulos de POI:', error);
+        });
+}
+
+function createRouteFromPOI(tripId, title) {
+    const generatingModal = new bootstrap.Modal(document.getElementById('routeGeneratingModal'));
+    const isRoundTrip = document.getElementById('roundTripCheckbox').checked;
+    const progressBar = document.getElementById('routeProgressBar');
+    const progressText = document.getElementById('routeProgressText');
+    
+    // Reset progress
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
+    progressText.textContent = 'Iniciando...';
+    
+    generatingModal.show();
+
+    console.log('[POI Route] Iniciando generación de ruta');
+    console.log('[POI Route] Trip ID:', tripId);
+    console.log('[POI Route] Título:', title);
+    console.log('[POI Route] Ida y vuelta:', isRoundTrip);
+
+    // Primero hacer un request para obtener el total de batches
+    fetch(BASE_URL + '/api/generate_route_from_poi.php', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ trip_id: tripId, title: title, is_round_trip: isRoundTrip })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('[POI Route] Respuesta:', JSON.stringify(data, null, 2));
+        generatingModal.hide();
+
+        if (data.success) {
+            const pointsInfo = data.points_used < data.points_original
+                ? ' (' + data.points_used + '/' + data.points_original + ' <?= __('map.points') ?>)'
+                : '';
+            alert('<?= __('map.route_generated') ?>' + pointsInfo);
+            window.location.href = 'trip_edit_map.php?id=' + tripId;
+        } else {
+            alert(data.error || '<?= __('map.error_generating_route') ?>');
+        }
+    })
+    .catch(error => {
+        console.error('[POI Route] Error:', error);
+        generatingModal.hide();
+        alert('<?= __('map.error_generating_route') ?>');
+    });
+    
+    // Simular progreso basado en tiempo estimado (2s por batch)
+    const estimatedBatches = 3; // Estimación conservadora
+    let currentBatch = 0;
+    const progressInterval = setInterval(function() {
+        if (currentBatch < estimatedBatches) {
+            currentBatch++;
+            const percent = Math.round((currentBatch / estimatedBatches) * 90); // Max 90% hasta completar
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = percent + '%';
+            progressText.textContent = 'Procesando lote ' + currentBatch + ' de ~' + estimatedBatches + '...';
+        } else {
+            clearInterval(progressInterval);
+        }
+    }, 2500); // Actualizar cada 2.5s
+}
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -283,6 +283,56 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
+<!-- Modal para seleccionar título de POI -->
+<div class="modal fade" id="poiTitleModal" tabindex="-1" aria-labelledby="poiTitleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="poiTitleModalLabel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-signpost-split me-2" viewBox="0 0 16 16">
+                        <path d="M7 7V1.414a1 1 0 0 1 2 0V2h5a1 1 0 0 1 .8.4l.975 1.3a.5.5 0 0 1 0 .6L14.8 5.6a1 1 0 0 1-.8.4H9v10H7v-5H2a1 1 0 0 1-.8-.4L.225 9.3a.5.5 0 0 1 0-.6L1.2 7.4A1 1 0 0 1 2 7h5zm1 3V8H2l-.75 1L2 10h6zm0-5h6l.75-1L14 3H8v2z"/>
+                    </svg>
+                    <?= __('map.select_poi_title') ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small"><?= __('map.select_poi_title_desc') ?></p>
+                <div id="poiTitlesList" class="list-group">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div id="poiTitlesLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden"><?= __('common.loading') ?></span>
+                    </div>
+                    <p class="mt-2 text-muted"><?= __('common.loading') ?></p>
+                </div>
+                <div id="poiTitlesEmpty" class="text-center py-4" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-inbox text-muted mb-2" viewBox="0 0 16 16">
+                        <path d="M4.98 4a.5.5 0 0 0-.39.188L1.54 8H6a.5.5 0 0 1 .5.5 1.5 1.5 0 1 0 3 0A.5.5 0 0 1 10 8h4.46l-3.05-3.812A.5.5 0 0 0 11.02 4zm9.954 5H10.45a2.5 2.5 0 0 1-4.9 0H1.066l.32 2.562a.5.5 0 0 0 .497.438h12.234a.5.5 0 0 0 .496-.438zM3.809 3.563A1.5 1.5 0 0 1 4.981 3h6.038a1.5 1.5 0 0 1 1.172.563l3.7 4.625a.5.5 0 0 1 .105.374l-.39 3.124A1.5 1.5 0 0 1 14.117 13H1.883a1.5 1.5 0 0 1-1.489-1.314l-.39-3.124a.5.5 0 0 1 .106-.373z"/>
+                    </svg>
+                    <p class="text-muted"><?= __('map.no_poi_groups') ?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de carga/generación de ruta -->
+<div class="modal fade" id="routeGeneratingModal" tabindex="-1" aria-labelledby="routeGeneratingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden"><?= __('common.loading') ?></span>
+                </div>
+                <h6><?= __('map.generating_route') ?></h6>
+                <p class="text-muted small mb-0"><?= __('map.generating_route_desc') ?></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- jQuery primero (requerido por trip_map.js) -->
 <script src="<?= ASSETS_URL ?>/vendor/jquery/jquery-3.7.1.min.js"></script>
 

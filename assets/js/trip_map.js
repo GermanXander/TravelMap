@@ -374,6 +374,9 @@
         // Remove from routesData
         routesData.splice(index, 1);
 
+        // Update the hidden form field
+        updateRoutesData();
+
         // Re-render the list
         renderRoutesList();
 
@@ -918,7 +921,189 @@
             }
         });
 
+        // Evento para crear ruta desde POI
+        $('#createRouteFromPOI').on('click', showCreateRouteFromPOIModal);
+
         console.log('Trip Map Editor inicializado');
+    }
+
+    /**
+     * Muestra el modal para seleccionar título de POI
+     */
+    function showCreateRouteFromPOIModal() {
+        const modal = new bootstrap.Modal(document.getElementById('poiTitleModal'));
+        const listContainer = $('#poiTitlesList');
+        const loadingContainer = $('#poiTitlesLoading');
+        const emptyContainer = $('#poiTitlesEmpty');
+
+        // Mostrar loading, ocultar otros
+        listContainer.hide();
+        emptyContainer.hide();
+        loadingContainer.show();
+        modal.show();
+
+        // Cargar títulos desde el servidor
+        $.ajax({
+            url: BASE_URL + '/api/get_poi_titles.php',
+            method: 'GET',
+            data: { trip_id: tripId },
+            dataType: 'json',
+            success: function (response) {
+                loadingContainer.hide();
+
+                if (response.success && response.data && response.data.length > 0) {
+                    renderPOITitles(response.data, modal);
+                    listContainer.show();
+                } else {
+                    emptyContainer.show();
+                }
+            },
+            error: function (xhr, status, error) {
+                loadingContainer.hide();
+                emptyContainer.show();
+                console.error('Error al cargar títulos de POI:', error);
+            }
+        });
+    }
+
+    /**
+     * Renderiza la lista de títulos de POI en el modal
+     */
+    function renderPOITitles(titles, modal) {
+        const listContainer = $('#poiTitlesList');
+        listContainer.empty();
+
+        titles.forEach(function (item) {
+            const listItem = $(`
+                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt me-2" viewBox="0 0 16 16">
+                            <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A32 32 0 0 1 8 14.58a32 32 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10"/>
+                            <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4m0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+                        </svg>
+                        ${item.title}
+                    </span>
+                    <span class="badge bg-primary rounded-pill">${item.point_count} ${__('map.points') || 'puntos'}</span>
+                </button>
+            `);
+
+            listItem.on('click', function () {
+                modal.hide();
+                createRouteFromPOI(item.title);
+            });
+
+            listContainer.append(listItem);
+        });
+    }
+
+    /**
+     * Crea una ruta desde los POI con un título específico
+     */
+    function createRouteFromPOI(title) {
+        const generatingModal = new bootstrap.Modal(document.getElementById('routeGeneratingModal'));
+        generatingModal.show();
+
+        const requestData = {
+            trip_id: tripId,
+            title: title
+        };
+
+        console.log('[POI Route] Iniciando generación de ruta');
+        console.log('[POI Route] Trip ID:', tripId);
+        console.log('[POI Route] Título:', title);
+        console.log('[POI Route] Request data:', JSON.stringify(requestData));
+        console.log('[POI Route] URL:', BASE_URL + '/api/generate_route_from_poi.php');
+
+        $.ajax({
+            url: BASE_URL + '/api/generate_route_from_poi.php',
+            method: 'POST',
+            data: JSON.stringify(requestData),
+            contentType: 'application/json',
+            dataType: 'json',
+            timeout: 60000, // 60 segundos timeout
+            success: function (response) {
+                console.log('[POI Route] Respuesta recibida del servidor');
+                console.log('[POI Route] Response completo:', JSON.stringify(response, null, 2));
+                console.log('[POI Route] Success:', response.success);
+                
+                if (response.success) {
+                    console.log('[POI Route] Puntos originales:', response.points_original);
+                    console.log('[POI Route] Puntos usados (filtrados):', response.points_used);
+                    console.log('[POI Route] Distancia total:', response.distance_meters, 'metros');
+                    console.log('[POI Route] GeoJSON coordinates count:', response.geojson ? response.geojson.geometry.coordinates.length : 0);
+                } else {
+                    console.error('[POI Route] Error del servidor:', response.error);
+                }
+
+                generatingModal.hide();
+
+                if (response.success) {
+                    // Agregar la ruta al mapa
+                    const color = transportColors['walk'] || '#44FF44';
+                    const layer = L.geoJSON(response.geojson, {
+                        style: {
+                            color: color,
+                            weight: 4,
+                            opacity: 0.8
+                        }
+                    });
+
+                    // Agregar metadata
+                    layer.eachLayer(function (l) {
+                        l.transportType = 'walk';
+                        l.color = color;
+                        l.isRoundTrip = false;
+                        l.distanceMeters = response.distance_meters;
+                        drawnItems.addLayer(l);
+                    });
+
+                    // Actualizar datos
+                    updateRoutesData();
+
+                    // Ajustar vista
+                    const bounds = layer.getBounds();
+                    map.fitBounds(bounds, { padding: [50, 50] });
+
+                    // Mostrar mensaje de éxito
+                    const pointsInfo = response.points_used < response.points_original 
+                        ? ` (${response.points_used}/${response.points_original} puntos)` 
+                        : '';
+                    alert(__('map.route_generated') || 'Ruta generada correctamente' + pointsInfo);
+
+                    console.log('[POI Route] Ruta creada exitosamente');
+                } else {
+                    alert(response.error || __('map.error_generating_route') || 'Error al generar la ruta');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('[POI Route] Error en petición AJAX');
+                console.error('[POI Route] Status:', status);
+                console.error('[POI Route] Error:', error);
+                console.error('[POI Route] XHR status:', xhr.status);
+                console.error('[POI Route] XHR statusText:', xhr.statusText);
+                console.error('[POI Route] XHR responseText:', xhr.responseText);
+                
+                if (xhr.responseJSON) {
+                    console.error('[POI Route] Response JSON:', JSON.stringify(xhr.responseJSON, null, 2));
+                }
+
+                generatingModal.hide();
+
+                let errorMsg = __('map.error_generating_route') || 'Error al generar la ruta';
+                if (status === 'timeout') {
+                    errorMsg = __('map.error_timeout') || 'La solicitud tardó demasiado. Intenta con menos puntos.';
+                } else if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                } else if (xhr.status === 0) {
+                    errorMsg = 'Error de conexión. Verifica tu conexión a internet.';
+                } else if (xhr.status === 500) {
+                    errorMsg = 'Error interno del servidor. Revisa los logs del servidor.';
+                }
+
+                alert(errorMsg);
+                console.error('Error al crear ruta desde POI:', error, xhr.responseText);
+            }
+        });
     }
 
 })();
