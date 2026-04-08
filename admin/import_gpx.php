@@ -39,21 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $transport_type = $_POST['transport_type'] ?? 'car';
 
     if ($trip_choice === 'existing' && empty($existing_trip_id)) {
-        $error = "Debes seleccionar un viaje existente.";
+        $error = __('import_gpx.error_no_trip');
     } elseif ($trip_choice === 'new' && empty($new_trip_name)) {
-        $error = "Debes ingresar un nombre para el nuevo viaje.";
+        $error = __('import_gpx.error_no_trip');
     } elseif (!isset($_FILES['gpx_file']) || $_FILES['gpx_file']['error'] !== UPLOAD_ERR_OK) {
-        $error = "Debes seleccionar un archivo GPX válido.";
+        $error = __('import_gpx.error_no_file');
     } else {
         $file = $_FILES['gpx_file'];
         $tmp_name = $file['tmp_name'];
 
         if (strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) !== 'gpx') {
-            $error = "El archivo debe tener extensión .gpx";
+            $error = __('import_gpx.error_invalid_file');
         } else {
             $xml = simplexml_load_file($tmp_name);
             if (!$xml) {
-                $error = "El archivo GPX no es válido o está corrupto.";
+                $error = __('import_gpx.error_invalid_gpx');
             } else {
                 $trip_id = null;
                 $trip_name = '';
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if (!$trip_id) {
-                    $error = "Error al crear o seleccionar el viaje.";
+                    $error = __('import_gpx.error_trip');
                 } else {
                     $pointModel = new Point();
                     $routeModel = new Route();
@@ -135,10 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($result) $trk_count = count($coordinates);
                     }
 
-                    $success = "¡Importación completada!<br>
-                                <strong>Viaje:</strong> $trip_name<br>
-                                <strong>Puntos de interés:</strong> $wpt_count<br>
-                                <strong>Puntos de ruta:</strong> $trk_count";
+                    $success = __('import_gpx.success') . '<br>' .
+                               '<strong>' . __('import_gpx.success_trip') . ':</strong> ' . htmlspecialchars($trip_name) . '<br>' .
+                               '<strong>' . __('import_gpx.success_points') . ':</strong> ' . $wpt_count . '<br>' .
+                               '<strong>' . __('import_gpx.success_route_points') . ':</strong> ' . $trk_count;
                 }
             }
         }
@@ -161,9 +161,9 @@ require_once __DIR__ . '/../includes/header.php';
                     <path d="M15.5 13H18.5C19.8807 13 21 14.1193 21 15.5V18.5C21 19.8807 19.8807 21 18.5 21H15.5C14.1193 21 13 19.8807 13 18.5V15.5C13 14.1193 14.1193 13 15.5 13Z"/>
                     <path d="M12 8L12 16"/>
                 </svg>
-                Importar GraphHopper (GPX)
+                <?= __('import_gpx.title') ?>
             </h1>
-            <p class="text-muted mb-0">Importa rutas desde archivos GPX. Los waypoints se crean como puntos de interés y los trackpoints como ruta.</p>
+            <p class="text-muted mb-0"><?= __('import_gpx.subtitle') ?></p>
         </div>
     </div>
 </div>
@@ -180,7 +180,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <path d="M17 8L12 3L7 8"/>
                 <path d="M12 3V15"/>
             </svg>
-            Seleccionar archivo GPX
+            <?= __('import_gpx.step1_title') ?>
         </h5>
     </div>
     <div class="card-body">
@@ -189,24 +189,24 @@ require_once __DIR__ . '/../includes/header.php';
                 <!-- Viaje destino -->
                 <div class="col-12 col-md-6">
                     <label class="form-label fw-semibold">
-                        Viaje destino <span class="text-danger">*</span>
+                        <?= __('import_gpx.select_trip') ?> <span class="text-danger">*</span>
                     </label>
                     <div class="mb-2">
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="trip_choice" id="tripChoiceNew" value="new" checked>
-                            <label class="form-check-label" for="tripChoiceNew">Crear nuevo viaje</label>
+                            <label class="form-check-label" for="tripChoiceNew"><?= __('import_gpx.create_new_trip') ?></label>
                         </div>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="trip_choice" id="tripChoiceExisting" value="existing">
-                            <label class="form-check-label" for="tripChoiceExisting">Agregar a viaje existente</label>
+                            <label class="form-check-label" for="tripChoiceExisting"><?= __('import_gpx.add_to_existing') ?></label>
                         </div>
                     </div>
                     <div id="newTripFields">
-                        <input type="text" class="form-control" id="new_trip_name" name="new_trip_name" placeholder="Nombre del nuevo viaje">
+                        <input type="text" class="form-control" id="new_trip_name" name="new_trip_name" placeholder="<?= __('import_gpx.trip_name_placeholder') ?>">
                     </div>
                     <div id="existingTripFields" class="d-none">
                         <select class="form-select" id="existing_trip_id" name="existing_trip_id">
-                            <option value="">— Seleccionar viaje —</option>
+                            <option value=""><?= __('import_gpx.choose_trip') ?></option>
                             <?php foreach ($trips as $trip): ?>
                                 <option value="<?= (int)$trip['id'] ?>">
                                     <?= htmlspecialchars($trip['title'], ENT_QUOTES, 'UTF-8') ?>
@@ -218,11 +218,11 @@ require_once __DIR__ . '/../includes/header.php';
                         </select>
                     </div>
                 </div>
-                <div class="w-100"></div>   <!-- fuerza salto -->
+                <div class="w-100"></div>
                 <!-- Tipo de transporte -->
                 <div class="col-12 col-md-6">
                     <label for="transport_type" class="form-label fw-semibold">
-                        Tipo de transporte <span class="text-danger">*</span>
+                        <?= __('import_gpx.transport_type') ?> <span class="text-danger">*</span>
                     </label>
                     <select class="form-select" id="transport_type" name="transport_type">
                         <?php foreach ($transportTypes as $key => $label): ?>
@@ -234,7 +234,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <!-- Archivo GPX -->
                 <div class="col-12">
                     <label class="form-label fw-semibold">
-                        Archivo GPX <span class="text-danger">*</span>
+                        <?= __('import_gpx.gpx_file') ?> <span class="text-danger">*</span>
                     </label>
                     <div id="dropArea" class="drop-area border border-2 border-dashed rounded-3 p-4 text-center"
                          style="cursor:pointer;border-color:#ced4da!important;transition:border-color .2s,background .2s;">
@@ -244,10 +244,10 @@ require_once __DIR__ . '/../includes/header.php';
                             <path d="M2 12H22"/>
                             <path d="M12 2C9.33333 7.33333 9.33333 16.6667 12 22C14.6667 16.6667 14.6667 7.33333 12 2Z"/>
                         </svg>
-                        <p class="mb-1 fw-semibold">Arrastra el archivo GPX aquí o haz clic para explorar</p>
-                        <p class="text-muted small mb-2">Solo archivos con extensión .gpx</p>
+                        <p class="mb-1 fw-semibold"><?= __('import_gpx.drop_here') ?></p>
+                        <p class="text-muted small mb-2"><?= __('import_gpx.only_gpx') ?></p>
                         <input type="file" id="fileInput" name="gpx_file" accept=".gpx" class="d-none">
-                        <p id="fileCount" class="mb-0 small text-muted">Ningún archivo seleccionado</p>
+                        <p id="fileCount" class="mb-0 small text-muted"><?= __('import_gpx.no_files') ?></p>
                     </div>
                 </div>
 
@@ -258,9 +258,9 @@ require_once __DIR__ . '/../includes/header.php';
                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1">
                             <path d="M20 6L9 17L4 12"/>
                         </svg>
-                        Importar GPX
+                        <?= __('import_gpx.process_btn') ?>
                     </button>
-                    <a href="trips.php" class="btn btn-outline-secondary ms-2">Volver a Viajes</a>
+                    <a href="trips.php" class="btn btn-outline-secondary ms-2"><?= __('import_gpx.back_btn') ?? 'Volver a Viajes' ?></a>
                 </div>
             </div>
         </form>
