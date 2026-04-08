@@ -19,13 +19,13 @@
     "import_export": "Importar / Exportar",
     "import_flights": "Importar Vuelos",
     "import_airbnb": "Importar Airbnb",
-    "import_gpx": "Importar GraphHopper (GPX)",
+    "import_gpx": "Importar Archivo GPX",
     "backup": "Respaldo",
     "import_brouter": "Importar Rutas BRouter",
     "import_exif": "Importar desde Fotos (EXIF)"
   },
   "import_gpx": {
-    "title": "Importar GraphHopper (GPX)",
+    "title": "Importar Archivo GPX",
     "subtitle": "Importa rutas desde archivos GPX. Los waypoints se crean como puntos de interés y los trackpoints como ruta.",
     "step1_title": "Seleccionar archivo GPX",
     "select_trip": "Viaje destino",
