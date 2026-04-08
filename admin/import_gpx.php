@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $trip_choice = $_POST['trip_choice'] ?? 'new';
     $existing_trip_id = $_POST['existing_trip_id'] ?? null;
     $new_trip_name = trim($_POST['new_trip_name'] ?? '');
+    $new_trip_description = trim($_POST['new_trip_description'] ?? __('import_gpx.default_description'));
     $transport_type = $_POST['transport_type'] ?? 'car';
     $import_waypoints = isset($_POST['import_waypoints']);
 
@@ -67,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $tripModel = new Trip();
                     $trip_id = $tripModel->create([
                         'title'       => $new_trip_name,
-                        'description' => 'Importado desde GPX (GraphHopper)',
+                        'description' => $new_trip_description,
                         'start_date'  => date('Y-m-d'),
                         'end_date'    => date('Y-m-d'),
                         'color_hex'   => Route::getColorByTransport($transport_type),
@@ -204,6 +205,7 @@ require_once __DIR__ . '/../includes/header.php';
                     </div>
                     <div id="newTripFields">
                         <input type="text" class="form-control" id="new_trip_name" name="new_trip_name" placeholder="<?= __('import_gpx.trip_name_placeholder') ?>">
+                        <input type="text" class="form-control mt-2" id="new_trip_description" name="new_trip_description" placeholder="<?= __('import_gpx.trip_description_placeholder') ?>" value="<?= __('import_gpx.default_description') ?>">
                     </div>
                     <div id="existingTripFields" class="d-none">
                         <select class="form-select" id="existing_trip_id" name="existing_trip_id">

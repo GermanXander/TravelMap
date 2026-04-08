@@ -34,6 +34,8 @@
     "create_new_trip": "Crear nuevo viaje",
     "add_to_existing": "Agregar a viaje existente",
     "trip_name_placeholder": "Nombre del nuevo viaje",
+    "trip_description_placeholder": "Descripción del viaje",
+    "default_description": "Importado desde GPX",
     "transport_type": "Tipo de transporte",
     "gpx_file": "Archivo GPX",
     "import_waypoints": "Importar waypoints como puntos de interés",
