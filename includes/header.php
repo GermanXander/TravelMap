@@ -202,19 +202,17 @@ $user_id = get_current_user_id();
                         </a>
                     </div>
                     <div class="nav-item">
-                        <a class="nav-link <?= ($current_page === 'import_openrail_gpx.php') ? 'active' : '' ?>" 
-                           href="<?= BASE_URL ?>/admin/import_openrail_gpx.php" 
-                           title="<?= __('navigation.import_openrail_gpx') ?? 'Importar Rutas OpenRail'  ?>">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                                <path d="M2 3H6.73259C9.34372 3 10.6493 3 11.8679 3.40119C13.0866 3.80239 14.1368 4.57795 16.2373 6.12907L19.9289 8.85517C19.9692 8.88495 19.9894 8.89984 20.0084 8.91416C21.2491 9.84877 21.985 11.307 21.9998 12.8603C22 12.8841 22 12.9091 22 12.9593C22 12.9971 22 13.016 21.9997 13.032C21.9825 14.1115 21.1115 14.9825 20.032 14.9997C20.016 15 19.9971 15 19.9593 15H2"></path>
-                                <path d="M2 11H6.095C8.68885 11 9.98577 11 11.1857 11.451C12.3856 11.9019 13.3983 12.77 15.4238 14.5061L16 15"></path>
-                                <path d="M10 7H17"></path>
-                                <path d="M2 19H22"></path>
-                                <path d="M18 19V21"></path>
-                                <path d="M12 19V21"></path>
-                                <path d="M6 19V21"></path>
+                        <a class="nav-link <?= ($current_page === 'import_gpx.php') ? 'active' : '' ?>" 
+                           href="<?= BASE_URL ?>/admin/import_gpx.php" 
+                           title="<?= __('navigation.import_gpx') ?? 'Importar GraphHopper (GPX)'  ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5.5 3C4.11929 3 3 4.11929 3 5.5V8.5C3 9.88071 4.11929 11 5.5 11H8.5C9.88071 11 11 9.88071 11 8.5V5.5C11 4.11929 9.88071 3 8.5 3H5.5Z"/>
+                                <path d="M8.5 13H5.5C4.11929 13 3 14.1193 3 15.5V18.5C3 19.8807 4.11929 21 5.5 21H8.5C9.88071 21 11 19.8807 11 18.5V15.5C11 14.1193 9.88071 13 8.5 13Z"/>
+                                <path d="M18.5 3H15.5C14.1193 3 13 4.11929 13 5.5V8.5C13 9.88071 14.1193 11 15.5 11H18.5C19.8807 11 21 9.88071 21 8.5V5.5C21 4.11929 19.8807 3 18.5 3Z"/>
+                                <path d="M15.5 13H18.5C19.8807 13 21 14.1193 21 15.5V18.5C21 19.8807 19.8807 21 18.5 21H15.5C14.1193 21 13 19.8807 13 18.5V15.5C13 14.1193 14.1193 13 15.5 13Z"/>
+                                <path d="M12 8L12 16"/>
                             </svg>
-                            <span class="nav-item-label"><?= __('navigation.import_openrail_gpx') ?? 'Importar Rutas OpenRail' ?></span>
+                            <span class="nav-item-label"><?= __('navigation.import_gpx') ?? 'Importar GraphHopper (GPX)' ?></span>
                         </a>
                     </div>                    <div class="nav-item">
                         <a class="nav-link <?= ($current_page === 'backup.php') ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/backup.php" title="<?= __('navigation.backup') ?? 'Backup' ?>">

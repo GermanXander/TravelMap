@@ -108,41 +108,7 @@ $transport_types = Route::getTransportTypes();
 require_once __DIR__ . '/../includes/header.php';
 
 ?>
-<div class="modal fade" id="mapModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="mapModalLabel">Procesando Nueva Ruta</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info py-2" id="label_info">
-                    Esperando datos de ruta...
-                </div>
 
-                <div id="map_canvas" style="width: 100%; height: 450px; background-color: #f0f0f0; border: 1px solid #ccc;"></div>
-                
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <label>Distancia Calculada (km):</label>
-                        <input type="text" id="input_distancia_nueva" class="form-control" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label>Acción:</label>
-                        <button type="button" class="btn btn-success btn-block" id="btnGuardarRuta">
-                            Confirmar y Guardar Ruta
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="mb-0">
@@ -188,14 +154,6 @@ require_once __DIR__ . '/../includes/header.php';
                         </svg>
                         <?= __('map.interactive_map') ?>
                     </h5>
-                    <button type="button" 
-                            class="btn btn-sm btn-primary btn-crear-ruta" 
-                            data-toggle="modal" 
-                            data-target="#mapModal" 
-                            data-coords='<?php echo json_encode($array_de_coordenadas); ?>'
-                            data-idviaje="<?php echo $viaje_id; ?>">
-                        <i class="fa fa-map-marker"></i> Crear Ruta Limpia
-                    </button>
                     <button type="button" class="btn btn-sm btn-danger" id="clearAllRoutes">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-trash me-1" viewBox="0 0 16 16">
                             <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
@@ -354,8 +312,6 @@ const PHP_TRANSLATIONS = <?= $lang->getTranslationsAsJson() ?>;
 <!-- i18n JS -->
 <script src="<?= ASSETS_URL ?>/js/i18n.js?v=<?php echo $version; ?>"></script>
 
-<script src="<?= ASSETS_URL ?>/js/osrm.js"></script>
-
 <script>
 // Inicializar i18n
 i18n.init();
@@ -364,13 +320,5 @@ i18n.init();
 
 <!-- Script del mapa -->
 <script src="<?= ASSETS_URL ?>/js/trip_map.js?v=<?php echo $version; ?>"></script>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
