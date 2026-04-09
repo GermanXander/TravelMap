@@ -1,4 +1,4 @@
-# TravelMap - Diario de Viajes Interactivo V 1.0.197
+# TravelMap - Diario de Viajes Interactivo V 1.0.211
 
 Aplicación web completa para crear y visualizar mapas interactivos de viajes con puntos de interés, rutas georreferenciadas y gestión multimedia. Sistema desarrollado con tecnologías nativas sin dependencias de frameworks externos.
 
@@ -352,7 +352,8 @@ Contribuciones:
 - [@Xyborg](https://github.com/Xyborg) - Cambios funcionales en admin. Importador FlightRadar CSV e Importador de Estadías Airbnb
 - [@tucho235](https://github.com/tucho235) - Sistema de tags para los viajes. Métricas de distancia de rutas. Página de viaje individual
 - [@herver1971](https://github.com/herver1971) - Importación para BRouter
-
+- [@GermanXander](https://github.com/GermanXander) - Importador GPX
+ 
 Este es un proyecto personal de código abierto. Siéntete libre de hacer fork y adaptarlo a tus necesidades.
 
 ## 📄 Licencia
