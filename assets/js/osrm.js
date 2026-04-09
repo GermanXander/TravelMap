@@ -50,6 +50,21 @@ $(document).ready(function() {
         }).addTo(map);
     }
 
+    // Mapea tipo de transporte al perfil de OSRM disponible
+    function osrmProfile(transportType) {
+        const profileMap = {
+            'bike': 'bike',
+            'walk': 'foot',
+            'car': 'car',
+            'bus': 'car',
+            'train': 'car',
+            'plane': 'car',
+            'ship': 'car',
+            'aerial': 'car'
+        };
+        return profileMap[transportType] || 'car';
+    }
+
     // Al abrir el modal, capturamos los datos y disparamos la creación
     $('#mapModal').on('shown.bs.modal', function (event) {
         initMap();
@@ -58,24 +73,25 @@ $(document).ready(function() {
         setTimeout(() => { map.invalidateSize(); }, 300);
 
         const button = $(event.relatedTarget); 
-        const coordenadasOriginales = button.data('coords'); // Los puntos del viaje existente
+        const coordenadasOriginales = button.data('coords');
+        const transportType = button.data('transport') || 'car';
 
         if (coordenadasOriginales && coordenadasOriginales.length > 0) {
-            crearRutaOptimizada(coordenadasOriginales);
+            crearRutaOptimizada(coordenadasOriginales, transportType);
         }
     });
 
     // --- 4. CREACIÓN DE LA RUTA MEDIANTE OSRM ---
 
-    async function crearRutaOptimizada(puntosBrutos) {
+    async function crearRutaOptimizada(puntosBrutos, transportType) {
         // Primero: Limpiamos los puntos para que OSRM no haga zig-zag
         const puntosLimpios = limpiarRuta(puntosBrutos);
 
         // Segundo: Formateamos para la API (longitud,latitud;)
         const coordsString = puntosLimpios.map(p => `${p[0]},${p[1]}`).join(';');
-        
-        // Usamos perfil 'foot' para máxima precisión en rutas cortas o peatonales
-        const url = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=full&geometries=geojson`;
+
+        const profile = osrmProfile(transportType || 'car');
+        const url = `https://router.project-osrm.org/route/v1/${profile}/${coordsString}?overview=full&geometries=geojson`;
 
         try {
             const response = await fetch(url);

@@ -7,12 +7,6 @@ require_auth();
 
 require_once __DIR__ . '/../config/db.php';
 
-// Habilitar reporte de errores para depuración (Quitar en producción)
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-
 header('Content-Type: application/json');
 
 try {
@@ -63,10 +57,15 @@ try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $trip_id = isset($_POST['trip_id']) ? (int)$_POST['trip_id'] : 0;
                 $geojson_str = $_POST['geojson_data'] ?? '';
-                $distance = isset($_POST['distance']) ? (int)$_POST['distance'] : 0; // Capturamos la distancia
-                
-                $transport_type = 'walk'; 
-                $color = '#3388ff';
+                $distance = isset($_POST['distance']) ? (int)$_POST['distance'] : 0;
+
+                $allowed_transport = ['plane', 'car', 'bike', 'walk', 'ship', 'train', 'bus', 'aerial'];
+                $transport_type = in_array($_POST['transport_type'] ?? '', $allowed_transport)
+                    ? $_POST['transport_type']
+                    : 'car';
+
+                require_once __DIR__ . '/../src/models/Route.php';
+                $color = Route::getColorByTransport($transport_type);
 
                 // La consulta ahora incluye la distancia real calculada por OSRM
                 $query = "INSERT INTO routes (trip_id, transport_type, geojson_data, color, distance_meters) 
