@@ -187,7 +187,7 @@ class Point {
 
         // Tipo requerido
         if (empty($data['type']) || !in_array($data['type'], ['stay', 'visit', 'food'])) {
-            $errors['type'] = 'Debe seleccionar un tipo válido (Alojamiento, Visita, Comida)';
+            $errors['type'] = __('points.point_type_invalid', 'You must select a valid type (Accommodation, Visit, Food)');
         }
 
         // Latitud requerida y válida
@@ -228,9 +228,9 @@ class Point {
      */
     public static function getTypes() {
         return [
-            'stay' => 'Alojamiento',
-            'visit' => 'Punto de Visita',
-            'food' => 'Restaurante/Comida'
+            'stay'  => __('points.types.stay', 'Accommodation'),
+            'visit' => __('points.types.visit', 'Point of Interest'),
+            'food'  => __('points.types.food', 'Restaurant'),
         ];
     }
 

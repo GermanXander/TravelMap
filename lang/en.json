@@ -150,6 +150,7 @@
     "point_type_stay": "Accommodation",
     "point_type_visit": "Point of Interest",
     "point_type_food": "Restaurant",
+    "point_type_invalid": "You must select a valid type (Accommodation, Visit, Food)",
     "click_to_view_full": "Click to view full size",
     "click_anywhere_to_close": "Click anywhere to close",
     "no_trips_available": "No trips available",
@@ -286,7 +287,8 @@
       "activity": "Activity",
       "food": "Food",
       "transport": "Transport",
-      "other": "Other"
+      "other": "Other",
+      "invalid": "You must select a valid type (Accommodation, Visit, Food)"
     },
     "date": "Date",
     "visit_date": "Visit Date and Time",

@@ -150,6 +150,7 @@
     "point_type_stay": "Alojamiento",
     "point_type_visit": "Punto de Visita",
     "point_type_food": "Restaurante",
+    "point_type_invalid": "Debe seleccionar un tipo válido (Alojamiento, Visita, Comida)",
     "click_to_view_full": "Click para ver en tamaño completo",
     "click_anywhere_to_close": "Clic en cualquier lugar para cerrar",
     "no_trips_available": "No hay viajes disponibles",
