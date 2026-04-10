@@ -915,7 +915,7 @@
 
                 lyr.bindPopup(`
                     <div class="route-popup">
-                        <strong>${config.icon} ${escapeHtml(trip.title)}</strong>${futureLabel}
+                        <strong>${config.icon} ${escapeHtml(trip.title)}</strong>${appConfig?.tripPageEnabled ? ` <a href="trip.php?id=${trip.id}" target="_blank" class="ms-1 text-muted text-decoration-none" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}${futureLabel}
                         ${tagsHtml}
                         <br>
                         <small class="text-muted">${__('map.transport')}: ${__('map.transport_' + transportType)}${formatDistance(route.distance_meters, transportType, route.is_round_trip)}</small>
@@ -1130,10 +1130,10 @@
 
         layer.bindPopup(`
             <div class="route-popup">
-                <strong>${config.icon} ${escapeHtml(trip.title)}</strong>${futureLabel}
+                <strong>${config.icon} ${escapeHtml(trip.title)}</strong>${appConfig?.tripPageEnabled ? ` <a href="trip.php?id=${trip.id}" target="_blank" class="ms-1 text-muted text-decoration-none" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}${futureLabel}
                 ${tagsHtml}
                 <br>
-                <small class="text-muted">${__('map.transport')}: ${__('map.transport_plane')}${formatDistance(route.distance_meters, 'plane', route.is_round_trip)}</small>
+                <small class="text-muted">${__('map.transport_plane')}${formatDistance(route.distance_meters, 'plane', route.is_round_trip)}</small>
             </div>
         `);
 
