@@ -109,6 +109,8 @@ $tripTooltipConfig = [
     'showDescription' => (bool) $settingsModel->get('trip_tooltip_show_description', true),
     'showLinks'       => (bool) $settingsModel->get('trip_tooltip_show_links', true),
     'showCoordinates' => (bool) $settingsModel->get('trip_tooltip_show_coordinates', true),
+    'flyZoom'         => (int) $settingsModel->get('trip_poi_fly_zoom', 11),
+    'flySpeed'        => $settingsModel->get('trip_poi_fly_speed', 'normal'),
 ];
 
 // Icons definition (matching public_map.js)

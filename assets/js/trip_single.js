@@ -11,6 +11,46 @@ let currentOpenPopupPointId = null;
 let isReopeningPopup = false;
 let flyToToken = 0;
 
+/**
+ * Fly (or jump) the map to a given lat/lng using the configured zoom and speed.
+ * @param {number} lat
+ * @param {number} lng
+ * @param {function} [onEnd] - optional callback fired after animation ends (MapLibre only)
+ */
+function doFlyTo(lat, lng, onEnd) {
+    const cfg = (typeof TRIP_TOOLTIP_CONFIG !== 'undefined') ? TRIP_TOOLTIP_CONFIG : {};
+    const zoom  = cfg.flyZoom  ?? 11;
+    const speed = cfg.flySpeed ?? 'normal';
+
+    if (MAP_RENDERER === 'leaflet') {
+        if (speed === 'none') {
+            map.setView([lat, lng], zoom, { animate: false });
+            if (onEnd) onEnd();
+        } else {
+            const durations = { slow: 2.0, normal: 1.0, fast: 0.4 };
+            map.flyTo([lat, lng], zoom, { animate: true, duration: durations[speed] ?? 1.0 });
+            if (onEnd) map.once('moveend', onEnd);
+        }
+    } else {
+        flyToToken++;
+        const myToken = flyToToken;
+        if (speed === 'none') {
+            map.jumpTo({ center: [lng, lat], zoom });
+            if (onEnd) onEnd();
+        } else {
+            const speeds = { slow: 0.5, normal: 1.2, fast: 2.5 };
+            map.flyTo({ center: [lng, lat], zoom, speed: speeds[speed] ?? 1.2 });
+            if (onEnd) {
+                map.once('moveend', () => {
+                    if (myToken !== flyToToken) return;
+                    onEnd(myToken);
+                });
+            }
+        }
+    }
+    return flyToToken;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initResizer();
     initMap();
@@ -472,13 +512,10 @@ function initInteractions() {
             // Fly to map
             if (MAP_RENDERER === 'leaflet') {
                 pendingPopupMarkerId = id;
-                map.flyTo([lat, lng], 14);
+                doFlyTo(lat, lng);
                 if (markers[id] && markers[id]._map) { markers[id].openPopup(); pendingPopupMarkerId = null; }
             } else {
-                flyToToken++;
-                const myToken = flyToToken;
-                map.flyTo({ center: [lng, lat], zoom: 14 });
-                map.once('moveend', () => {
+                doFlyTo(lat, lng, (myToken) => {
                     if (myToken !== flyToToken) return; // cancelled by newer flyTo
                     if (markers[id] && markers[id].getPopup()) markers[id].togglePopup();
                 });
@@ -560,12 +597,7 @@ window.viewImageFromData = function (element) {
     const lng = parseFloat(timelineEl.dataset.lng);
     if (isNaN(lat) || isNaN(lng)) return;
 
-    if (MAP_RENDERER === 'leaflet') {
-        map.flyTo([lat, lng], 14);
-    } else {
-        flyToToken++;
-        map.flyTo({ center: [lng, lat], zoom: 14 });
-    }
+    doFlyTo(lat, lng);
 
     // Update active marker highlight
     if (activeMarkerId && markers[activeMarkerId]) {

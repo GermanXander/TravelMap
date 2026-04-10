@@ -181,6 +181,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'value' => isset($_POST['trip_tooltip_show_coordinates']) && $_POST['trip_tooltip_show_coordinates'] === '1',
             'type' => 'boolean'
         ];
+        if (isset($_POST['trip_poi_fly_zoom'])) {
+            $updates['trip_poi_fly_zoom'] = [
+                'value' => max(1, min(20, (int)$_POST['trip_poi_fly_zoom'])),
+                'type' => 'number'
+            ];
+        }
+        $allowedSpeeds = ['none', 'slow', 'normal', 'fast'];
+        if (isset($_POST['trip_poi_fly_speed']) && in_array($_POST['trip_poi_fly_speed'], $allowedSpeeds)) {
+            $updates['trip_poi_fly_speed'] = [
+                'value' => $_POST['trip_poi_fly_speed'],
+                'type' => 'string'
+            ];
+        }
 
         // Configuraciones del sitio público
         if (isset($_POST['site_title'])) {
@@ -928,6 +941,48 @@ require_once __DIR__ . '/../includes/header.php';
                         #tooltip-preview-grid { grid-template-columns: 1fr !important; }
                     }
                 </style>
+            </div>
+        </div>
+
+        <div class="admin-card" style="margin-top: 24px;">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title"><?= __('settings.trip_navigation_settings', 'Map Navigation') ?></h3>
+            </div>
+            <div class="admin-card-body">
+                <p class="form-hint" style="margin-bottom: 20px;"><?= __('settings.trip_navigation_settings_desc', 'Configure the zoom level and animation when navigating to a point of interest on the map.') ?></p>
+
+                <div class="form-group" style="max-width: 480px;">
+                    <label style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 4px;" for="trip_poi_fly_zoom">
+                        <?= __('settings.trip_poi_fly_zoom', 'Zoom level') ?>
+                    </label>
+                    <div class="form-hint" style="margin-bottom: 10px;"><?= __('settings.trip_poi_fly_zoom_desc', 'Zoom level applied when the map flies to a point of interest (1 = world view, 20 = maximum detail).') ?></div>
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <input type="range" id="trip_poi_fly_zoom" name="trip_poi_fly_zoom"
+                               min="1" max="20" step="1"
+                               value="<?= (int)($currentSettings['trip_poi_fly_zoom'] ?? 11) ?>"
+                               style="flex: 1;"
+                               oninput="document.getElementById('fly_zoom_val').textContent = this.value">
+                        <span id="fly_zoom_val" style="font-size: 16px; font-weight: 700; min-width: 28px; text-align: center;">
+                            <?= (int)($currentSettings['trip_poi_fly_zoom'] ?? 11) ?>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px; max-width: 320px;">
+                    <label style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 4px;" for="trip_poi_fly_speed">
+                        <?= __('settings.trip_poi_fly_speed', 'Animation') ?>
+                    </label>
+                    <div class="form-hint" style="margin-bottom: 10px;"><?= __('settings.trip_poi_fly_speed_desc', 'Speed of the fly-to animation when navigating to a point.') ?></div>
+                    <select id="trip_poi_fly_speed" name="trip_poi_fly_speed" class="form-select">
+                        <?php
+                        $currentSpeed = $currentSettings['trip_poi_fly_speed'] ?? 'normal';
+                        $speeds = ['none' => __('settings.trip_poi_fly_speed_none', 'None (instant)'), 'slow' => __('settings.trip_poi_fly_speed_slow', 'Slow'), 'normal' => __('settings.trip_poi_fly_speed_normal', 'Normal'), 'fast' => __('settings.trip_poi_fly_speed_fast', 'Fast')];
+                        foreach ($speeds as $val => $label):
+                        ?>
+                            <option value="<?= $val ?>" <?= $currentSpeed === $val ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
         </div>
     </div>

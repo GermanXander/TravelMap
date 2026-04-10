@@ -531,6 +531,16 @@
     "trip_tooltip_show_links_desc": "Muestra los enlaces externos del punto en el popup.",
     "trip_tooltip_show_coordinates": "Coordenadas",
     "trip_tooltip_show_coordinates_desc": "Muestra las coordenadas geográficas del punto en el popup.",
+    "trip_navigation_settings": "Navegación en el mapa",
+    "trip_navigation_settings_desc": "Configura el nivel de zoom y la animación al navegar hacia un punto de interés en el mapa.",
+    "trip_poi_fly_zoom": "Nivel de zoom",
+    "trip_poi_fly_zoom_desc": "Zoom que se aplica cuando el mapa vuela hacia un punto de interés (1 = vista mundial, 20 = máximo detalle).",
+    "trip_poi_fly_speed": "Animación",
+    "trip_poi_fly_speed_desc": "Velocidad de la animación al navegar hacia un punto.",
+    "trip_poi_fly_speed_none": "Ninguna (instantáneo)",
+    "trip_poi_fly_speed_slow": "Lenta",
+    "trip_poi_fly_speed_normal": "Normal",
+    "trip_poi_fly_speed_fast": "Rápida",
     "preview": "Vista previa"
   },
   "original_settings": {
