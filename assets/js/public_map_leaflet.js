@@ -100,16 +100,32 @@
      */
     function savePreferences() {
         try {
+            const existingPrefs = loadPreferences();
             const prefs = {
                 showRoutes: $('#toggleRoutes').is(':checked'),
                 showPoints: $('#togglePoints').is(':checked'),
                 showFlightRoutes: $('#toggleFlightRoutes').is(':checked'),
                 selectedTrips: getSelectedTripIds(),
-                knownTripIds: getAllTripIds() // Track all known trips to detect new ones
+                knownTripIds: getAllTripIds(), // Track all known trips to detect new ones
+                yearCollapsedStates: existingPrefs.yearCollapsedStates, // Preserve collapsed states
+                groupBy: existingPrefs.groupBy || 'year' // Preserve groupBy preference
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
         } catch (e) {
             console.warn('Error saving preferences to localStorage:', e);
+        }
+    }
+
+    /**
+     * Save groupBy preference to localStorage
+     */
+    function saveGroupByPreference(groupBy) {
+        try {
+            const prefs = loadPreferences();
+            prefs.groupBy = groupBy;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        } catch (e) {
+            console.warn('Error saving groupBy preference:', e);
         }
     }
 
@@ -556,6 +572,35 @@
     }
 
     /**
+     * Groups trips by tag
+     */
+    function groupTripsByTag(trips) {
+        const grouped = {};
+        trips.forEach(function (trip) {
+            const tags = (appConfig && appConfig.tripTagsEnabled && trip.tags && trip.tags.length > 0)
+                ? trip.tags
+                : [null];
+            tags.forEach(function (tag) {
+                const key = tag !== null ? tag : '__no_tag__';
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(trip);
+            });
+        });
+        return grouped;
+    }
+
+    /**
+     * Gets sorted tag keys (alphabetical, no-tag last)
+     */
+    function getSortedTagKeys(groupedTrips) {
+        return Object.keys(groupedTrips).sort(function (a, b) {
+            if (a === '__no_tag__') return 1;
+            if (b === '__no_tag__') return -1;
+            return a.localeCompare(b);
+        });
+    }
+
+    /**
      * Gets saved year collapsed states from preferences
      * Returns null if no states have been saved yet (first visit)
      */
@@ -608,7 +653,7 @@
     }
 
     /**
-     * Renderiza el panel de viajes con checkboxes agrupados por año
+     * Renderiza el panel de viajes con checkboxes agrupados por año o por tag
      */
     function renderTripsPanel() {
         const $tripsList = $('#tripsList');
@@ -619,22 +664,8 @@
             return;
         }
 
-        // Group trips by year
-        const groupedTrips = groupTripsByYear(tripsData);
-        const sortedYears = getSortedYearKeys(groupedTrips);
-        const savedCollapsedStates = getYearCollapsedStates();
-
-        // Determine collapsed states: use saved or calculate defaults
-        let collapsedStates = {};
-        if (savedCollapsedStates === null) {
-            // First visit: collapse all except future and current/last year
-            const expandedYears = getDefaultExpandedYears(sortedYears);
-            sortedYears.forEach(function (year) {
-                collapsedStates[year] = !expandedYears.includes(year);
-            });
-        } else {
-            collapsedStates = savedCollapsedStates;
-        }
+        const prefs = loadPreferences();
+        const groupBy = prefs.groupBy || 'year';
 
         // Icons
         const chevronDown = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>';
@@ -643,15 +674,51 @@
         const routeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="19" r="3"/><path d="M12 5H8.5C6.567 5 5 6.567 5 8.5C5 10.433 6.567 12 8.5 12H15.5C17.433 12 19 13.567 19 15.5C19 17.433 17.433 19 15.5 19H12"/></svg>';
         const pointIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 18C5.17107 18.4117 4 19.0443 4 19.7537C4 20.9943 7.58172 22 12 22C16.4183 22 20 20.9943 20 19.7537C20 19.0443 18.8289 18.4117 17 18"/><path d="M14.5 9C14.5 10.3807 13.3807 11.5 12 11.5C10.6193 11.5 9.5 10.3807 9.5 9C9.5 7.61929 10.6193 6.5 12 6.5C13.3807 6.5 14.5 7.61929 14.5 9Z"/><path d="M13.2574 17.4936C12.9201 17.8184 12.4693 18 12.0002 18C11.531 18 11.0802 17.8184 10.7429 17.4936C7.6543 14.5008 3.51519 11.1575 5.53371 6.30373C6.6251 3.67932 9.24494 2 12.0002 2C14.7554 2 17.3752 3.67933 18.4666 6.30373C20.4826 11.1514 16.3536 14.5111 13.2574 17.4936Z"/></svg>';
 
-        sortedYears.forEach(function (year) {
-            const trips = groupedTrips[year];
-            const yearId = 'year-' + year.replace(/\s/g, '-');
-            const isCollapsed = collapsedStates[year] === true;
-            const isFutureGroup = year === 'future';
-            const yearLabel = isFutureGroup ? __('map.upcoming_trips') : year;
-            const yearClass = isFutureGroup ? 'year-group year-future' : 'year-group';
+        let groupedTrips, sortedKeys;
 
-            // Calculate totals for the year
+        if (groupBy === 'tag') {
+            groupedTrips = groupTripsByTag(tripsData);
+            sortedKeys = getSortedTagKeys(groupedTrips);
+        } else {
+            groupedTrips = groupTripsByYear(tripsData);
+            sortedKeys = getSortedYearKeys(groupedTrips);
+        }
+
+        const savedCollapsedStates = getYearCollapsedStates() || {};
+        const currentYear = new Date().getFullYear().toString();
+
+        // For year mode: determine defaults if no saved state
+        let collapsedStates = savedCollapsedStates;
+        if (groupBy === 'year' && Object.keys(savedCollapsedStates).length === 0) {
+            const expandedYears = getDefaultExpandedYears(sortedKeys);
+            sortedKeys.forEach(function (key) {
+                collapsedStates[key] = !expandedYears.includes(key);
+            });
+        }
+
+        sortedKeys.forEach(function (groupKey) {
+            const trips = groupedTrips[groupKey];
+            const groupId = 'year-' + groupKey.replace(/\s/g, '-').replace(/[^a-zA-Z0-9\-_]/g, '_');
+
+            let groupLabel, groupClass, defaultExpanded;
+
+            if (groupBy === 'tag') {
+                const isNoTag = groupKey === '__no_tag__';
+                groupLabel = isNoTag ? __('map.no_tag') : escapeHtml(groupKey);
+                groupClass = isNoTag ? 'year-group year-no-tag' : 'year-group';
+                defaultExpanded = true;
+            } else {
+                const isFutureGroup = groupKey === 'future';
+                groupLabel = isFutureGroup ? __('map.upcoming_trips') : groupKey;
+                groupClass = isFutureGroup ? 'year-group year-future' : 'year-group';
+                defaultExpanded = isFutureGroup || groupKey === currentYear;
+            }
+
+            const isCollapsed = collapsedStates[groupKey] !== undefined
+                ? collapsedStates[groupKey] === true
+                : !defaultExpanded;
+
+            // Calculate totals
             let totalRoutes = 0;
             let totalPoints = 0;
             trips.forEach(function (trip) {
@@ -659,61 +726,58 @@
                 totalPoints += trip.points ? trip.points.length : 0;
             });
 
-            // Year group header
+            const isFutureGroupHeader = groupBy === 'year' && groupKey === 'future';
+
             const $yearGroup = $(`
-                <div class="${yearClass}" data-year="${year}">
+                <div class="${groupClass}" data-year="${groupKey}">
                     <div class="year-header">
                         <div class="year-header-left">
                             <input class="form-check-input year-checkbox" 
                                    type="checkbox" 
-                                   id="${yearId}-checkbox" 
-                                   data-year="${year}"
+                                   id="${groupId}-checkbox" 
+                                   data-year="${groupKey}"
                                    checked>
-                            <button class="year-toggle-btn" type="button" data-target="${yearId}">
+                            <button class="year-toggle-btn" type="button" data-target="${groupId}">
                                 <span class="year-chevron">${isCollapsed ? chevronRight : chevronDown}</span>
-                                <span class="year-label">${isFutureGroup ? futureIcon + ' ' : ''}${yearLabel}</span>
+                                <span class="year-label">${isFutureGroupHeader ? futureIcon + ' ' : ''}${groupLabel}</span>
                                 <span class="year-count badge">${trips.length}</span>
                             </button>
                         </div>
                         <div class="year-stats">
-                            <span title="Rutas">${routeIcon} ${totalRoutes}</span>
-                            <span title="Puntos">${pointIcon} ${totalPoints}</span>
+                            <span title="${__('map.routes')}">${routeIcon} ${totalRoutes}</span>
+                            <span title="${__('map.points')}">${pointIcon} ${totalPoints}</span>
                         </div>
                     </div>
-                    <div class="year-trips ${isCollapsed ? 'collapsed' : ''}" id="${yearId}">
+                    <div class="year-trips ${isCollapsed ? 'collapsed' : ''}" id="${groupId}">
                     </div>
                 </div>
             `);
 
             const $yearTrips = $yearGroup.find('.year-trips');
 
-            // Render trips in this year group
+            // Render trips in this group
             trips.forEach(function (trip) {
                 const routesCount = trip.routes ? trip.routes.length : 0;
                 const pointsCount = trip.points ? trip.points.length : 0;
                 const isFuture = isFutureTrip(trip);
-                const futureBadge = isFuture ? `<span class="badge bg-light text-secondary border ms-2" style="font-size: 0.65rem;">${futureIcon} Próximo</span>` : '';
+                const futureBadge = isFuture ? `<span class="badge bg-light text-secondary border ms-2" style="font-size: 0.65rem;">${futureIcon} ${__('map.upcoming_trip')}</span>` : '';
                 const itemClass = isFuture ? 'trip-filter-item trip-future' : 'trip-filter-item';
                 const colorIndicator = isFuture ? '#6B6B6B' : trip.color;
 
-                // Generar HTML de tags
+                // Generar HTML de tags (solo en modo año)
                 let tagsHtml = '';
-                if (appConfig?.tripTagsEnabled && trip.tags && trip.tags.length > 0) {
+                if (groupBy === 'year' && appConfig && appConfig.tripTagsEnabled && trip.tags && trip.tags.length > 0) {
                     tagsHtml = '<div class="trip-tags mt-1 d-flex gap-1 flex-wrap">';
-
                     const MAX_TAGS = 4;
                     const visibleTags = trip.tags.slice(0, MAX_TAGS);
                     const hiddenTags = trip.tags.slice(MAX_TAGS);
-
-                    visibleTags.forEach(tag => {
+                    visibleTags.forEach(function (tag) {
                         tagsHtml += `<span class="badge bg-light text-dark border" style="font-size: 0.65em;">${escapeHtml(tag)}</span>`;
                     });
-
                     if (hiddenTags.length > 0) {
                         const hiddenTagsText = escapeHtml(hiddenTags.join(', '));
                         tagsHtml += `<span class="badge bg-secondary border" style="font-size: 0.65em; cursor: help;" title="${hiddenTagsText}">+${hiddenTags.length}</span>`;
                     }
-
                     tagsHtml += '</div>';
                 }
 
@@ -724,12 +788,11 @@
                                    type="checkbox" 
                                    id="trip-${trip.id}" 
                                    value="${trip.id}"
-                                   data-year="${year}"
+                                   data-year="${groupKey}"
                                    checked>
                             <div class="trip-color-dot mt-1" style="background-color: ${colorIndicator};"></div>
                             <label class="form-check-label flex-grow-1" for="trip-${trip.id}">
-                                
-                                <span class="trip-title">${escapeHtml(trip.title)}${appConfig?.tripPageEnabled ? ` <a href="trip.php?id=${trip.id}" class="trip-page-link" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}</span>
+                                <span class="trip-title">${escapeHtml(trip.title)}${appConfig && appConfig.tripPageEnabled ? ` <a href="trip.php?id=${trip.id}" class="trip-page-link" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}</span>
                                 <span class="trip-details">
                                     ${formatDateRange(trip.start_date, trip.end_date)}
                                     <span class="trip-counts">
@@ -749,28 +812,27 @@
             $tripsList.append($yearGroup);
         });
 
-        // Year toggle (collapse/expand) events
+        // Year/group toggle (collapse/expand) events
         $('.year-toggle-btn').on('click', function () {
             const targetId = $(this).data('target');
             const $target = $('#' + targetId);
             const $chevron = $(this).find('.year-chevron');
-            const year = $(this).closest('.year-group').data('year');
+            const groupKey = $(this).closest('.year-group').data('year');
             const isCollapsing = !$target.hasClass('collapsed');
 
             $target.toggleClass('collapsed');
             $chevron.html(isCollapsing ? chevronRight : chevronDown);
 
             // Save collapsed state
-            saveYearCollapsedState(year, isCollapsing);
+            saveYearCollapsedState(groupKey, isCollapsing);
         });
 
-        // Year checkbox events
+        // Group checkbox events
         $('.year-checkbox').on('change', function () {
-            const year = $(this).data('year');
+            const groupKey = $(this).data('year');
             const isChecked = $(this).is(':checked');
 
-            // Toggle all trips in this year
-            $(`.trip-checkbox[data-year="${year}"]`).each(function () {
+            $(`.trip-checkbox[data-year="${groupKey}"]`).each(function () {
                 $(this).prop('checked', isChecked);
                 const tripId = parseInt($(this).val());
                 if (isChecked) {
@@ -793,14 +855,14 @@
         // Apply saved trip selections after rendering
         applyTripSelectionPreferences();
 
-        // Update year checkbox states based on trip selections
-        sortedYears.forEach(function (year) {
-            updateYearCheckboxState(year);
+        // Update group checkbox states based on trip selections
+        sortedKeys.forEach(function (key) {
+            updateYearCheckboxState(key);
         });
     }
 
     /**
-     * Updates year checkbox state based on its trips
+     * Updates year/group checkbox state based on its trips
      */
     function updateYearCheckboxState(year) {
         const $yearCheckbox = $(`.year-checkbox[data-year="${year}"]`);
@@ -1706,6 +1768,15 @@
         // Share map link button
         $('#shareMapBtn').on('click', function () {
             shareMapLink();
+        });
+
+        // Group by selector — restore saved state before binding listener
+        const savedGroupBy = (loadPreferences().groupBy) || 'year';
+        $('input[name="groupBy"][value="' + savedGroupBy + '"]').prop('checked', true);
+
+        $('input[name="groupBy"]').on('change', function () {
+            saveGroupByPreference($(this).val());
+            renderTripsPanel();
         });
 
         // Inicializar lightbox

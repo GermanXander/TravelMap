@@ -167,7 +167,11 @@
     "link_copied": "Enlace copiado al portapapeles",
     "copy_failed": "No se pudo copiar el enlace",
     "loading_trips": "Cargando viajes...",
-    "view_trip_details": "Ver detalles"
+    "view_trip_details": "Ver detalles",
+    "group_by": "Agrupar por",
+    "group_by_year": "Año",
+    "group_by_tag": "Etiqueta",
+    "no_tag": "Sin etiqueta"
   },
   "forms": {
     "required_fields": "Campos obligatorios",

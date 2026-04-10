@@ -1207,6 +1207,47 @@ body {
     color: white;
 }
 
+/* ========== Selector agrupar por ========== */
+.group-by-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    margin-top: -4px;
+    opacity: 0.75;
+}
+
+.group-by-selector:hover {
+    opacity: 1;
+}
+
+.group-by-label {
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.group-by-selector .btn-group .btn {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+    background: transparent;
+}
+
+.group-by-selector .btn-group .btn:hover {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.group-by-selector .btn-check:checked + .btn {
+    background: #475569;
+    border-color: #475569;
+    color: white;
+}
+
 /* ========== Leyenda flotante ========== */
 .legend-card {
     position: fixed;

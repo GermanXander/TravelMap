@@ -167,7 +167,11 @@
     "link_copied": "Link copied to clipboard",
     "copy_failed": "Failed to copy link",
     "loading_trips": "Loading trips...",
-    "view_trip_details": "View details"
+    "view_trip_details": "View details",
+    "group_by": "Group by",
+    "group_by_year": "Year",
+    "group_by_tag": "Tag",
+    "no_tag": "No tag"
   },
   "forms": {
     "required_fields": "Required Fields",

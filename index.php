@@ -141,6 +141,15 @@ $footerNoteText = $settingsModel->get('footer_note_text', '');
                         <button type="button" class="filter-btn" id="filterNone" title="<?= __('map.hide_all_trips') ?>"><?= __('map.filter_none') ?></button>
                     </div>
                 </div>
+                <div class="group-by-selector">
+                    <span class="group-by-label"><?= __('map.group_by') ?>:</span>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="<?= __('map.group_by') ?>">
+                        <input type="radio" class="btn-check" name="groupBy" id="groupByYear" value="year" checked>
+                        <label class="btn btn-outline-secondary" for="groupByYear"><?= __('map.group_by_year') ?></label>
+                        <input type="radio" class="btn-check" name="groupBy" id="groupByTag" value="tag">
+                        <label class="btn btn-outline-secondary" for="groupByTag"><?= __('map.group_by_tag') ?></label>
+                    </div>
+                </div>
                 <div id="tripsList">
                     <!-- Se llenará dinámicamente con JavaScript -->
                     <div class="text-center text-muted py-4">
