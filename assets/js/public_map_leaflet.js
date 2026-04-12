@@ -465,6 +465,10 @@
         if (legendItems.length === 0) return;
 
         legendItems.empty();
+        //permite que se pueda ocultar y mostrar el listado de leyendas.
+        legendItems.prev().on('click', function () {
+            legendItems.toggle(200);
+        });
 
         // Definir el orden y labels de los tipos de transporte
         const transportOrder = [
