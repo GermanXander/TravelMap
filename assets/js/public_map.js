@@ -917,6 +917,10 @@
         if (legendItems.length === 0) return;
 
         legendItems.empty();
+        //permite que se pueda ocultar y mostrar el listado de leyendas.
+        legendItems.prev().on('click', function () {
+            legendItems.toggle(200);
+        });
 
         const transportOrder = [
             { type: 'plane', icon: transportIcons.plane, label: __('map.transport_plane') },
