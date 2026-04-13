@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.230] – 2026-04-13
+- Toggle de caja de leyenda
+
 ## [1.0.223] – 2026-04-11
 - Soporte de Google Photos como tipo de link en POI Links
 
