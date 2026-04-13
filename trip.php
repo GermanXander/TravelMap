@@ -7,7 +7,9 @@ require_once __DIR__ . '/src/models/Route.php';
 require_once __DIR__ . '/src/models/Point.php';
 require_once __DIR__ . '/src/models/TripTag.php';
 require_once __DIR__ . '/src/models/PoiLink.php';
+require_once __DIR__ . '/src/models/RouteLink.php';
 require_once __DIR__ . '/src/helpers/FileHelper.php';
+require_once __DIR__ . '/src/helpers/DateTimeHelper.php';
 require_once __DIR__ . '/src/models/Settings.php';
 
 // Check feature flag
@@ -31,6 +33,7 @@ $routeModel   = new Route();
 $pointModel   = new Point();
 $tripTagModel = new TripTag();
 $poiLinkModel = new PoiLink();
+$routeLinkModel = new RouteLink();
 
 $trip = $tripModel->getById($tripId);
 
@@ -44,29 +47,40 @@ $routes = $routeModel->getByTripId($tripId);
 $tags = $tripTagModel->getByTripId($tripId);
 $points = $pointModel->getAll($tripId);
 
-// Sort points by visit_date (oldest to newest)
-usort($points, function($a, $b) {
-    $dateA = strtotime($a['visit_date'] ?? '1970-01-01 00:00:00');
-    $dateB = strtotime($b['visit_date'] ?? '1970-01-01 00:00:00');
-    return $dateA - $dateB;
-});
-
-// Calcular estadísticas
+// Calcular estadísticas y procesar rutas
 $totalDistance = 0;
 $processedRoutes = [];
+$timelineItems = [];
+
 foreach ($routes as $route) {
     $dist = (int) ($route['distance_meters'] ?? 0);
     $totalDistance += $dist;
     
-    $processedRoutes[] = [
+    $routeLinks = RouteLink::toApiArray($routeLinkModel->getByRouteId((int) $route['id']));
+    
+    $processedRoute = [
         'id' => (int) $route['id'],
         'transport_type' => $route['transport_type'],
         'color' => $route['color'],
-        'geojson' => json_decode($route['geojson_data'], true)
+        'geojson' => json_decode($route['geojson_data'], true),
+        'name' => $route['name'] ?? null,
+        'description' => $route['description'] ?? null,
+        'start_datetime' => $route['start_datetime'] ?? null,
+        'end_datetime' => $route['end_datetime'] ?? null,
+        'links' => $routeLinks,
+    ];
+    $processedRoutes[] = $processedRoute;
+    
+    // Agregar a timeline (todas las rutas, sin filtrar)
+    $timelineItems[] = [
+        'type' => 'route',
+        'item' => $processedRoute,
+        'sort_date' => !empty($route['start_datetime']) ? strtotime($route['start_datetime']) : PHP_INT_MAX,
+        'has_date' => !empty($route['start_datetime']),
     ];
 }
 
-// Procesar puntos para JS y visualización
+// Procesar puntos para JS y timeline
 $processedPoints = [];
 foreach ($points as $point) {
     $thumbnail_url = null;
@@ -77,7 +91,7 @@ foreach ($points as $point) {
     
     $links = PoiLink::toApiArray($poiLinkModel->getByPoiId((int) $point['id']));
 
-    $processedPoints[] = [
+    $processedPoint = [
         'id' => (int) $point['id'],
         'title' => $point['title'],
         'description' => $point['description'],
@@ -89,7 +103,26 @@ foreach ($points as $point) {
         'visit_date' => $point['visit_date'],
         'links' => $links,
     ];
+    $processedPoints[] = $processedPoint;
+    
+    // Agregar a timeline
+    $timelineItems[] = [
+        'type' => 'point',
+        'item' => $processedPoint,
+        'sort_date' => strtotime($point['visit_date'] ?? '1970-01-01 00:00:00'),
+        'has_date' => !empty($point['visit_date']),
+    ];
 }
+
+// Ordenar timeline: primero los que tienen fecha (por fecha), luego los que no tienen fecha
+usort($timelineItems, function($a, $b) {
+    // Si ambos tienen fecha o ambos no tienen, ordenar por fecha
+    if ($a['has_date'] === $b['has_date']) {
+        return $a['sort_date'] - $b['sort_date'];
+    }
+    // Los que tienen fecha van primero
+    return $a['has_date'] ? -1 : 1;
+});
 
 $tripDataForJS = [
     'id' => (int) $trip['id'],
@@ -206,35 +239,74 @@ $statsIcons = [
                 </div>
                 <?php endif; ?>
 
-                <?php if (!empty($processedPoints)): ?>
+                <?php if (!empty($timelineItems)): ?>
                 <div class="trip-timeline">
-                    <p class="timeline-heading"><?= __('map.points') ?></p>
                     <div class="timeline-points">
-                        <?php foreach ($processedPoints as $point): ?>
-                        <div class="timeline-point" data-id="<?= $point['id'] ?>" data-lat="<?= $point['latitude'] ?>" data-lng="<?= $point['longitude'] ?>">
-                            <div class="point-marker"></div>
-                            <div class="point-content">
-                                <div class="point-header">
-                                    <h3 class="point-title"><?= htmlspecialchars($point['title']) ?></h3>
-                                    <?php if ($point['visit_date']): ?>
-                                        <span class="point-date"><?= date('d M Y', strtotime($point['visit_date'])) ?></span>
-                                    <?php endif; ?>
+                        <?php foreach ($timelineItems as $timelineItem): ?>
+                            <?php if ($timelineItem['type'] === 'route'): ?>
+                                <?php $route = $timelineItem['item']; ?>
+                                <div class="timeline-point timeline-route" data-route-id="<?= $route['id'] ?>">
+                                    <div class="point-marker" style="background-color: <?= htmlspecialchars($route['color']) ?>;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="point-content">
+                                        <div class="point-header">
+                                            <?php if (!empty($route['name'])): ?>
+                                                <h3 class="point-title"><?= htmlspecialchars($route['name']) ?></h3>
+                                            <?php else: ?>
+                                                <h3 class="point-title text-muted"><?= __('map.route') ?> #<?= $route['id'] ?></h3>
+                                            <?php endif; ?>
+                                            <?php if (!empty($route['start_datetime'])): ?>
+                                                <span class="point-date"><?= formatRouteDatetime($route['start_datetime'], $route['end_datetime'] ?? null) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($route['description'])): ?>
+                                        <div class="route-description"><?= nl2br(htmlspecialchars($route['description'])) ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($route['links'])): ?>
+                                        <div class="point-links">
+                                            <?php foreach ($route['links'] as $link): ?>
+                                            <a href="<?= htmlspecialchars($link['url']) ?>"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="point-link-btn"
+                                               title="<?= htmlspecialchars($link['label']) ?>">
+                                                <?= RouteLink::getSvg($link['type'], 14) ?>
+                                            </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
-                                <?php if (!empty($point['links'])): ?>
-                                <div class="point-links">
-                                    <?php foreach ($point['links'] as $link): ?>
-                                    <a href="<?= htmlspecialchars($link['url']) ?>"
-                                       target="_blank"
-                                       rel="noopener noreferrer"
-                                       class="point-link-btn"
-                                       title="<?= htmlspecialchars($link['label']) ?>">
-                                        <?= PoiLink::getSvg($link['type'], 14) ?>
-                                    </a>
-                                    <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php $point = $timelineItem['item']; ?>
+                                <div class="timeline-point" data-id="<?= $point['id'] ?>" data-lat="<?= $point['latitude'] ?>" data-lng="<?= $point['longitude'] ?>">
+                                    <div class="point-marker"></div>
+                                    <div class="point-content">
+                                        <div class="point-header">
+                                            <h3 class="point-title"><?= htmlspecialchars($point['title']) ?></h3>
+                                            <?php if ($point['visit_date']): ?>
+                                                <span class="point-date"><?= date('d M Y', strtotime($point['visit_date'])) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($point['links'])): ?>
+                                        <div class="point-links">
+                                            <?php foreach ($point['links'] as $link): ?>
+                                            <a href="<?= htmlspecialchars($link['url']) ?>"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="point-link-btn"
+                                               title="<?= htmlspecialchars($link['label']) ?>">
+                                                <?= PoiLink::getSvg($link['type'], 14) ?>
+                                            </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -253,7 +325,12 @@ $statsIcons = [
             <div class="trip-media">
                 <?php 
                 $pointsWithImages = array_filter($processedPoints, function($p) { return !empty($p['image_url']); });
-                // Sort by visit_date (newest first on left, oldest last on right)
+                // Sort by visit_date (oldest first on left, newest last on right)
+                usort($pointsWithImages, function($a, $b) {
+                    $dateA = strtotime($a['visit_date'] ?? '1970-01-01 00:00:00');
+                    $dateB = strtotime($b['visit_date'] ?? '1970-01-01 00:00:00');
+                    return $dateA - $dateB;
+                });
 
                 if (!empty($pointsWithImages)): 
                 ?>

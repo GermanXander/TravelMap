@@ -67,17 +67,22 @@ class Route {
             }
 
             $stmt = $this->db->prepare('
-                INSERT INTO routes (trip_id, transport_type, geojson_data, is_round_trip, distance_meters, color)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO routes (trip_id, transport_type, geojson_data, is_round_trip, distance_meters, color, name, description, image_path, start_datetime, end_datetime)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
             
             $result = $stmt->execute([
                 $data['trip_id'],
                 $data['transport_type'],
                 $data['geojson_data'],
-                $data['is_round_trip'] ?? 1,
+                $data['is_round_trip'] ?? 0,
                 $distance,
-                $data['color'] ?? '#3388ff'
+                $data['color'] ?? '#3388ff',
+                $data['name'] ?? null,
+                $data['description'] ?? null,
+                $data['image_path'] ?? null,
+                $data['start_datetime'] ?? null,
+                $data['end_datetime'] ?? null
             ]);
 
             return $result ? $this->db->lastInsertId() : false;
@@ -106,7 +111,7 @@ class Route {
 
             $stmt = $this->db->prepare('
                 UPDATE routes 
-                SET transport_type = ?, geojson_data = ?, is_round_trip = ?, distance_meters = ?, color = ?
+                SET transport_type = ?, geojson_data = ?, is_round_trip = ?, distance_meters = ?, color = ?, name = ?, description = ?, image_path = ?, start_datetime = ?, end_datetime = ?
                 WHERE id = ?
             ');
             
@@ -116,6 +121,11 @@ class Route {
                 $data['is_round_trip'] ?? 0,
                 $distance,
                 $data['color'] ?? '#3388ff',
+                $data['name'] ?? null,
+                $data['description'] ?? null,
+                $data['image_path'] ?? null,
+                $data['start_datetime'] ?? null,
+                $data['end_datetime'] ?? null,
                 $id
             ]);
         } catch (PDOException $e) {

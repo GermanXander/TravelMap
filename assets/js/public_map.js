@@ -271,6 +271,61 @@
     }
 
     /**
+     * Formatea fecha/hora de inicio y fin de ruta
+     */
+    function formatRouteDatetime(start, end) {
+        const isValid = (v) => v && v !== 'null' && v !== 'undefined' && v !== '';
+        if (!isValid(start) && !isValid(end)) return '';
+        
+        const opts = { day: '2-digit', month: 'short' };
+        const timeOpts = { hour: '2-digit', minute: '2-digit' };
+        const locale = document.documentElement.lang || 'es-ES';
+        
+        const parseDate = (dt) => {
+            if (!isValid(dt)) return null;
+            let d = new Date(dt);
+            if (!isNaN(d.getTime())) return d;
+            d = new Date(dt.replace(' ', 'T'));
+            if (!isNaN(d.getTime())) return d;
+            const parts = dt.match(/(\d{4})-(\d{2})-(\d{2})\s*(\d{2}):?(\d{2})?/);
+            if (parts) {
+                return new Date(parts[1], parts[2] - 1, parts[3], parts[4] || 0, parts[5] || 0);
+            }
+            return null;
+        };
+        
+        const formatDate = (dt) => {
+            const d = parseDate(dt);
+            if (!d) return '';
+            return d.toLocaleDateString(locale, opts);
+        };
+        
+        const formatTime = (dt) => {
+            const d = parseDate(dt);
+            if (!d) return '';
+            return d.toLocaleTimeString(locale, timeOpts);
+        };
+        
+        const startDate = formatDate(start);
+        const startTime = formatTime(start);
+        const endDate = formatDate(end);
+        const endTime = formatTime(end);
+        
+        if (startDate && startTime && endDate && endTime) {
+            return `${startDate} ${startTime} - ${endTime}`;
+        } else if (startDate && startTime) {
+            return `${startDate} ${startTime}`;
+        } else if (startDate) {
+            return startDate;
+        } else if (endDate && endTime) {
+            return `${endDate} ${endTime}`;
+        } else if (endDate) {
+            return endDate;
+        }
+        return '';
+    }
+
+    /**
      * Initialize the MapLibre GL map
      */
     function initMap() {
@@ -527,10 +582,26 @@
                     tagsHtml += '</div>';
                 }
 
+                let linksHtml = '';
+                if (route.links && route.links.length > 0) {
+                    linksHtml = '<div class="mt-1 d-flex gap-1 flex-wrap">';
+                    route.links.forEach(link => {
+                        const color = link.color || '#6c757d';
+                        const svgPaths = link.svg_paths || '<path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1 1 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4 4 0 0 1-.128-1.287z"/><path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243z"/>';
+                        const label = link.label || link.type || 'Link';
+                        linksHtml += `<a href="${escapeHtml(link.url)}" target="_blank" class="text-decoration-none" title="${escapeHtml(label)}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="${color}" viewBox="0 0 16 16">${svgPaths}</svg></a>`;
+                    });
+                    linksHtml += '</div>';
+                }
+
                 popup.setLngLat(e.lngLat)
                     .setHTML(`
                         <div class="route-popup">
                             <strong>${config.icon} ${escapeHtml(trip.title)}</strong>${appConfig?.tripPageEnabled ? ` <a href="trip.php?id=${trip.id}" target="_blank" class="ms-1 text-muted text-decoration-none" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}${futureLabel}
+                            ${route.name ? `<br><small class="text-primary fw-bold">${escapeHtml(route.name)}</small>` : ''}
+                            ${(route.start_datetime && route.start_datetime !== 'null') || (route.end_datetime && route.end_datetime !== 'null') ? `<br><small class="text-secondary">${formatRouteDatetime(route.start_datetime, route.end_datetime)}</small>` : ''}
+                            ${route.description ? `<br><small class="text-muted">${escapeHtml(route.description)}</small>` : ''}
+                            ${linksHtml}
                             ${tagsHtml}
                             <br>
                             <small class="text-muted">${__('map.transport')}: ${__('map.transport_' + transportType)}${formatDistance(route.distance_meters, transportType, route.is_round_trip)}</small>
@@ -600,6 +671,11 @@
                                 target: coords[1],
                                 tripId: trip.id,
                                 tripTitle: trip.title,
+                                routeName: route.name || '',
+                                routeDescription: route.description || '',
+                                startDatetime: route.start_datetime || '',
+                                endDatetime: route.end_datetime || '',
+                                routeLinks: route.links || [],
                                 isFuture: isFuture,
                                 distanceMeters: route.distance_meters,
                                 isRoundTrip: route.is_round_trip,
@@ -649,10 +725,26 @@
                         tagsHtml += '</div>';
                     }
 
+                    let linksHtml = '';
+                    if (d.routeLinks && d.routeLinks.length > 0) {
+                        linksHtml = '<div class="mt-1 d-flex gap-1 flex-wrap">';
+                        d.routeLinks.forEach(link => {
+                            const color = link.color || '#6c757d';
+                            const svgPaths = link.svg_paths || '<path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1 1 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4 4 0 0 1-.128-1.287z"/><path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243z"/>';
+                            const label = link.label || link.type || 'Link';
+                            linksHtml += `<a href="${escapeHtml(link.url)}" target="_blank" class="text-decoration-none" title="${escapeHtml(label)}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="${color}" viewBox="0 0 16 16">${svgPaths}</svg></a>`;
+                        });
+                        linksHtml += '</div>';
+                    }
+
                     popup.setLngLat(info.coordinate)
                         .setHTML(`
                             <div class="route-popup">
                                 <strong>${transportIcons.plane} ${escapeHtml(d.tripTitle)}</strong>${appConfig?.tripPageEnabled ? ` <a href="trip.php?id=${d.tripId}" target="_blank" class="ms-1 text-muted text-decoration-none" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}${futureLabel}
+                                ${d.routeName ? `<br><small class="text-primary fw-bold">${escapeHtml(d.routeName)}</small>` : ''}
+                                ${(d.startDatetime && d.startDatetime !== 'null') || (d.endDatetime && d.endDatetime !== 'null') ? `<br><small class="text-secondary">${formatRouteDatetime(d.startDatetime, d.endDatetime)}</small>` : ''}
+                                ${d.routeDescription ? `<br><small class="text-muted">${escapeHtml(d.routeDescription)}</small>` : ''}
+                                ${linksHtml}
                                 ${tagsHtml}
                                 <br>
                                 <small class="text-muted">${__('map.transport')}: ${__('map.transport_plane')}${formatDistance(d.distanceMeters, 'plane', d.isRoundTrip)}</small>

@@ -147,12 +147,13 @@
                 <table class="table table-sm table-hover mb-0">
                     <thead>
                         <tr>
-                            <th style="width: 50px; text-align: center;">#</th>
-                            <th style="width: 60px; text-align: center;"></th>
-                            <th>${__('routes.transport_type') || 'Transport Type'}</th>
-                            <th style="width: 80px; text-align: center;">${__('routes.is_round_trip') || 'Round Trip'}</th>
-                            <th style="width: 100px; text-align: center;">${__('routes.distance') || 'Distance'}</th>
-                            <th style="width: 100px; text-align: center;">${__('trips.actions') || 'Actions'}</th>
+                            <th style="width: 40px; text-align: center;">#</th>
+                            <th style="width: 50px; text-align: center;"></th>
+                            <th>${__('routes.route_name') || 'Nombre'}</th>
+                            <th style="width: 60px; text-align: center;">${__('routes.transport_type') || 'Tipo'}</th>
+                            <th style="width: 70px; text-align: center;">${__('routes.is_round_trip') || 'Ida/Vuelta'}</th>
+                            <th style="width: 90px; text-align: center;">${__('routes.distance') || 'Distancia'}</th>
+                            <th style="width: 80px; text-align: center;">${__('trips.actions') || 'Acciones'}</th>
                         </tr>
                     </thead>
                     <tbody id="routesTableBody"></tbody>
@@ -166,6 +167,8 @@
         routesData.forEach(function (route, index) {
             const color = route.color || transportColors[route.transport_type];
             const icon = transportIcons[route.transport_type] || '';
+            const routeName = route.name || '<em class="text-muted">—</em>';
+            const hasDetails = route.name || route.description;
 
             // Build transport type selector
             const transportOrder = ['plane', 'car', 'bike', 'train', 'ship', 'walk', 'bus', 'aerial'];
@@ -179,9 +182,13 @@
             const row = $(`
                 <tr data-route-index="${index}" style="cursor: pointer;" title="${__('map.focus_route')}">
                     <td class="text-center align-middle">
-                        <div style="width: 30px; height: 4px; background-color: ${color}; margin: 0 auto;"></div>
+                        <div style="width: 20px; height: 4px; background-color: ${color}; margin: 0 auto;"></div>
                     </td>
                     <td class="text-center align-middle">${icon}</td>
+                    <td class="align-middle small">
+                        <span class="route-name-cell">${routeName}</span>
+                        ${hasDetails ? '<i class="bi bi-pencil text-primary ms-1" style="font-size: 10px;"></i>' : ''}
+                    </td>
                     <td class="align-middle">
                         <select class="form-select form-select-sm transport-type-selector" data-route-index="${index}">
                             ${optionsHtml}
@@ -196,8 +203,13 @@
                         ${formatDistanceDisplay(route.distance_meters, route.transport_type, route.is_round_trip)}
                     </td>
                     <td class="text-center align-middle">
+                        <button class="btn btn-sm btn-outline-primary edit-route-btn" data-route-index="${index}" title="${__('routes.edit_route') || 'Editar'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
+                            </svg>
+                        </button>
                         <button class="btn btn-sm btn-outline-danger delete-route-btn" data-route-index="${index}" title="${__('map.delete_route')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
                                 <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
                             </svg>
@@ -409,6 +421,9 @@
         // Cargar rutas existentes
         loadExistingRoutes();
 
+        // Inicializar modal de edición de ruta
+        initRouteModal();
+
         // Cargar puntos existentes
         loadExistingPoints();
 
@@ -565,10 +580,15 @@
             routesData.push({
                 transport_type: layer.transportType || 'car',
                 color: layer.color || transportColors['car'],
-                is_round_trip: layer.isRoundTrip === true, // Asegurar que sea explícitamente true
+                is_round_trip: layer.isRoundTrip === true,
                 distance_meters: distanceForInfo,
                 geojson: geojson,
-                layer: layer  // Keep reference to the layer
+                name: layer.routeName || '',
+                description: layer.routeDescription || '',
+                start_datetime: layer.startDatetime || '',
+                end_datetime: layer.endDatetime || '',
+                links: layer.routeLinks || [],
+                layer: layer
             });
         });
 
@@ -577,7 +597,12 @@
             transport_type: route.transport_type,
             color: route.color,
             is_round_trip: route.is_round_trip ? 1 : 0,
-            geojson: route.geojson
+            geojson: route.geojson,
+            name: route.name,
+            description: route.description,
+            start_datetime: route.start_datetime,
+            end_datetime: route.end_datetime,
+            links: route.links || []
         }));
         document.getElementById('routes_data').value = JSON.stringify(routesDataForSave);
 
@@ -615,9 +640,13 @@
             layer.eachLayer(function (l) {
                 l.transportType = transportType;
                 l.color = color;
-                // Asegurar que is_round_trip sea boolean y solo true si es 1 o true
                 l.isRoundTrip = route.is_round_trip === 1 || route.is_round_trip === true || route.is_round_trip === "1";
                 l.distanceMeters = route.distance_meters;
+                l.routeName = route.name || '';
+                l.routeDescription = route.description || '';
+                l.startDatetime = route.start_datetime || '';
+                l.endDatetime = route.end_datetime || '';
+                l.routeLinks = route.links || [];
                 drawnItems.addLayer(l);
             });
         });
@@ -919,6 +948,165 @@
         });
 
         console.log('Trip Map Editor inicializado');
+    }
+
+    /**
+     * Inicializa el modal para editar nombre y descripción de rutas
+     */
+    function initRouteModal() {
+        // Crear modal HTML si no existe
+        if ($('#routeEditModal').length === 0) {
+            const linkTypes = Object.keys(window.routeLinkTypes || {
+                'website': 'Website',
+                'google_maps': 'Google Maps',
+                'other': 'Enlace'
+            });
+            let linkOptionsHtml = '';
+            linkTypes.forEach(type => {
+                const label = window.routeLinkTypes?.[type]?.label || type;
+                linkOptionsHtml += `<option value="${type}">${label}</option>`;
+            });
+            
+            const modalHtml = `
+            <div class="modal fade" id="routeEditModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">${__('routes.edit_route') || 'Editar Ruta'}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">${__('routes.start_datetime') || 'Inicio'}</label>
+                                    <input type="datetime-local" class="form-control" id="routeStartDatetimeInput">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">${__('routes.end_datetime') || 'Fin'}</label>
+                                    <input type="datetime-local" class="form-control" id="routeEndDatetimeInput">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">${__('routes.route_name') || 'Nombre'}</label>
+                                <input type="text" class="form-control" id="routeNameInput" placeholder="${__('routes.name_placeholder') || 'Ej: Vuelo EZE-MAD'}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">${__('routes.description') || 'Descripción'}</label>
+                                <textarea class="form-control" id="routeDescInput" rows="3" placeholder="${__('routes.description_placeholder') || 'Notas sobre esta ruta...'}"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">${__('routes.external_links') || 'Links Externos'}</label>
+                                <div id="route-links-container"></div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addRouteLinkBtn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2l-2.218-.887zm3.564 1.426L5.596 5 8 5.961l1.598-1.5zM7.5 14H5.092l1.406-1.406 2.002 2.002 2.002-2.002.998.998-.5.5a2.5 2.5 0 0 1-3.5 3.5l-.5-.5.998-.998 1.5 1.5 1.5-1.5-.998-.998.5-.5a2.5 2.5 0 0 1 3.5-3.5l.5.5-1.5 1.5-.998.998.5.5a2.5 2.5 0 0 1-3.5 3.5l-.5-.5-2.002 2.002z"/></svg>
+                                    ${__('routes.add_link') || 'Agregar link'}
+                                </button>
+                                <template id="route-link-template">
+                                    <div class="route-link-row input-group mb-2">
+                                        <select class="form-select" style="max-width: 180px;">
+                                            ${linkOptionsHtml}
+                                        </select>
+                                        <input type="url" class="form-control" placeholder="https://" required>
+                                        <input type="text" class="form-control" placeholder="${__('routes.link_label_optional') || 'Etiqueta (opcional)'}" style="max-width: 140px;">
+                                        <button type="button" class="btn btn-outline-danger remove-link-btn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${__('common.cancel') || 'Cancelar'}</button>
+                            <button type="button" class="btn btn-primary" id="saveRouteDetails">${__('common.save') || 'Guardar'}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            $('body').append(modalHtml);
+            
+            // Event handlers para links
+            $(document).on('click', '#addRouteLinkBtn', function() {
+                const template = $('#route-link-template').html();
+                $('#route-links-container').append(template);
+            });
+            
+            $(document).on('click', '.remove-link-btn', function() {
+                $(this).closest('.route-link-row').remove();
+            });
+        }
+
+        let currentRouteIndex = null;
+
+        // Botón de editar en cada fila
+        $(document).on('click', '.edit-route-btn', function() {
+            const index = parseInt($(this).data('route-index'));
+            currentRouteIndex = index;
+            const route = routesData[index];
+            
+            // Formatear datetime para input datetime-local (YYYY-MM-DDTHH:MM)
+            const formatDatetimeLocal = (dt) => {
+                if (!dt) return '';
+                const d = new Date(dt);
+                return d.toISOString().slice(0, 16);
+            };
+            
+            $('#routeStartDatetimeInput').val(formatDatetimeLocal(route.start_datetime));
+            $('#routeEndDatetimeInput').val(formatDatetimeLocal(route.end_datetime));
+            $('#routeNameInput').val(route.name || '');
+            $('#routeDescInput').val(route.description || '');
+            
+            // Cargar links
+            $('#route-links-container').empty();
+            if (route.links && route.links.length > 0) {
+                route.links.forEach(link => {
+                    const template = $('#route-link-template').html();
+                    const row = $(template);
+                    row.find('select').val(link.type || 'website');
+                    row.find('input[type="url"]').val(link.url || '');
+                    row.find('input[type="text"]').val(link.label || '');
+                    $('#route-links-container').append(row);
+                });
+            }
+            
+            const modal = new bootstrap.Modal($('#routeEditModal'));
+            modal.show();
+        });
+
+        // Guardar cambios
+        $('#saveRouteDetails').on('click', function() {
+            if (currentRouteIndex !== null && routesData[currentRouteIndex]) {
+                const route = routesData[currentRouteIndex];
+                route.start_datetime = $('#routeStartDatetimeInput').val() || null;
+                route.end_datetime = $('#routeEndDatetimeInput').val() || null;
+                route.name = $('#routeNameInput').val();
+                route.description = $('#routeDescInput').val();
+                
+                // Recolectar links
+                route.links = [];
+                $('#route-links-container .route-link-row').each(function() {
+                    const linkType = $(this).find('select').val();
+                    const linkUrl = $(this).find('input[type="url"]').val();
+                    const linkLabel = $(this).find('input[type="text"]').val();
+                    if (linkUrl) {
+                        route.links.push({
+                            link_type: linkType,
+                            url: linkUrl,
+                            label: linkLabel || ''
+                        });
+                    }
+                });
+                
+                if (route.layer) {
+                    route.layer.routeName = route.name;
+                    route.layer.routeDescription = route.description;
+                    route.layer.startDatetime = route.start_datetime;
+                    route.layer.endDatetime = route.end_datetime;
+                    route.layer.routeLinks = route.links;
+                }
+                updateRoutesData();
+                bootstrap.Modal.getInstance($('#routeEditModal')).hide();
+            }
+        });
     }
 
 })();
