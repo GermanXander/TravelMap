@@ -398,6 +398,7 @@
             return endDate;
         }
         return '';
+    }
 
     /**
      * Inicializa el mapa
