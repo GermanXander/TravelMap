@@ -1405,7 +1405,8 @@ body {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     padding: 0;
     overflow: hidden;
-    min-width: 250px;
+    min-width: 280px;
+    max-width: 320px;
 }
 
 .leaflet-container .custom-popup .leaflet-popup-content-wrapper {
@@ -1438,6 +1439,13 @@ body {
 
 .point-popup {
     font-size: 14px;
+    max-width: 90vw;
+}
+
+@media (min-width: 576px) {
+    .point-popup {
+        max-width: 320px;
+    }
 }
 
 .popup-image {
@@ -1510,6 +1518,8 @@ body {
     margin-top: 8px;
     margin-bottom: 8px;
     line-height: 1.5;
+    max-height: 120px;
+    overflow-y: auto;
 }
 
 .popup-coords {

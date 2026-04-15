@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.238] – 2026-04-15
+- Agregar scrollbar a descripciones largas en popups de puntos de interés
+
 ## [1.0.237] – 2026-04-15
 - Fix: links de rutas no mantenían su tipo al editar (se convertían a "Website")
 - Migración 020: columna `show_routes_in_timeline` (NULL/0/1) en tabla `trips`
