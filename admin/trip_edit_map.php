@@ -105,7 +105,7 @@ foreach ($routes as $route) {
         'end_datetime' => $route['end_datetime'] ?? '',
         'links' => array_map(function($lnk) {
             return [
-                'type' => $lnk['link_type'],
+                'link_type' => $lnk['link_type'],
                 'url' => $lnk['url'],
                 'label' => $lnk['label'] ?? ''
             ];

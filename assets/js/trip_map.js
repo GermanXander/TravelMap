@@ -1136,7 +1136,7 @@
                 route.links.forEach(link => {
                     const template = $('#route-link-template').html();
                     const row = $(template);
-                    row.find('select').val(link.type || 'website');
+                    row.find('select').val(link.link_type || link.type || 'website');
                     row.find('input[type="url"]').val(link.url || '');
                     row.find('input[type="text"]').val(link.label || '');
                     $('#route-links-container').append(row);

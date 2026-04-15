@@ -1,6 +1,7 @@
 # Changelog
 
-## [1.0.236] – 2026-04-15
+## [1.0.237] – 2026-04-15
+- Fix: links de rutas no mantenían su tipo al editar (se convertían a "Website")
 - Migración 020: columna `show_routes_in_timeline` (NULL/0/1) en tabla `trips`
 - Nueva opción por viaje para mostrar u ocultar rutas en el timeline de `trip.php`; si no está configurada, usa el valor por defecto global
 - Setting global `trip_timeline_show_routes` (default: ocultar) en la tab de configuración de viaje
