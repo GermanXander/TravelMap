@@ -71,13 +71,15 @@ foreach ($routes as $route) {
     ];
     $processedRoutes[] = $processedRoute;
     
-    // Agregar a timeline (todas las rutas, sin filtrar)
-    $timelineItems[] = [
-        'type' => 'route',
-        'item' => $processedRoute,
-        'sort_date' => !empty($route['start_datetime']) ? strtotime($route['start_datetime']) : PHP_INT_MAX,
-        'has_date' => !empty($route['start_datetime']),
-    ];
+    // Solo agregar al timeline si tiene fecha de inicio
+    if (!empty($route['start_datetime'])) {
+        $timelineItems[] = [
+            'type' => 'route',
+            'item' => $processedRoute,
+            'sort_date' => strtotime($route['start_datetime']),
+            'has_date' => true,
+        ];
+    }
 }
 
 // Procesar puntos para JS y timeline

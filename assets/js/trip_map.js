@@ -163,7 +163,7 @@
                             <th style="width: 110px; text-align: center;">${__('routes.transport_type') || 'Tipo'}</th>
                             <th style="width: 100px; text-align: center;">${__('routes.is_round_trip') || 'Ida/Vuelta'}</th>
                             <th style="width: 90px; text-align: center;">${__('routes.distance') || 'Distancia'}</th>
-                            <th style="width: 80px; text-align: center;">${__('trips.actions') || 'Acciones'}</th>
+                            <th style="width: 90px; min-width: 90px; white-space: nowrap; text-align: center;">${__('trips.actions') || 'Acciones'}</th>
                         </tr>
                     </thead>
                     <tbody id="routesTableBody"></tbody>
@@ -212,7 +212,7 @@
                     <td class="text-center align-middle small">
                         ${formatDistanceDisplay(route.distance_meters, route.transport_type, route.is_round_trip)}
                     </td>
-                    <td class="text-center align-middle">
+                    <td class="text-center align-middle" style="white-space: nowrap;">
                         <button class="btn btn-sm btn-outline-primary edit-route-btn" data-route-index="${index}" title="${__('routes.edit_route') || 'Editar'}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
