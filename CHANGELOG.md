@@ -1,6 +1,9 @@
 # Changelog
 
-## [1.0.240] – 2026-04-13
+## [1.0.234] – 2026-04-14
+- Mejora visual: pantalla para carga de rutas con modal adaptado al diseño general
+
+## [1.0.231] – 2026-04-13
 - Modelo Route: nuevos campos `name`, `description`, `image_path` en `create()` y `update()`
 - Nuevo modelo `RouteLink` para links externos tipificados en rutas (paralelo a `PoiLink`)
 - API `get_all_data.php`: incluye nuevos campos de ruta y links en el response

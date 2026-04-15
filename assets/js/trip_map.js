@@ -14,6 +14,8 @@
     let pointMarkers = null; // Se inicializa en initMap()
     let routesData = [];
     let appConfig = null; // Configuración cargada desde el servidor
+    let pendingTransportCallback = null; // Callback para el modal de selección de transporte
+    let selectedTransportType = null;    // Tipo elegido en el modal
 
     // SVG icons for transport types
     const transportIcons = {
@@ -38,6 +40,27 @@
         'bus': '#9C27B0',
         'aerial': '#E91E63'
     };
+
+    // Lista ordenada de tipos de transporte (compartida por renderLegend e initTransportModal)
+    // Declarada aquí, después de transportIcons, para evitar temporal dead zone
+    // Las etiquetas se rellenan al llamar buildTransportLabels()
+    const orderedTransportTypes = [
+        { type: 'plane', icon: transportIcons.plane, label: '' },
+        { type: 'car',   icon: transportIcons.car,   label: '' },
+        { type: 'bike',  icon: transportIcons.bike,  label: '' },
+        { type: 'train', icon: transportIcons.train, label: '' },
+        { type: 'ship',  icon: transportIcons.ship,  label: '' },
+        { type: 'walk',  icon: transportIcons.walk,  label: '' },
+        { type: 'bus',   icon: transportIcons.bus,   label: '' },
+        { type: 'aerial',icon: transportIcons.aerial,label: '' }
+    ];
+
+    function buildTransportLabels() {
+        const defaults = { plane: 'Avión', car: 'Auto', bike: 'Bicicleta', train: 'Tren', ship: 'Barco', walk: 'Caminata', bus: 'Bus', aerial: 'Aéreo' };
+        orderedTransportTypes.forEach(function (t) {
+            t.label = (typeof transportTypes !== 'undefined' && transportTypes[t.type]) || defaults[t.type];
+        });
+    }
 
     /**
      * Carga la configuración desde el servidor
@@ -92,19 +115,8 @@
 
         legendContainer.empty();
 
-        // Orden de los tipos de transporte (use transportTypes from PHP if available)
-        const transportOrder = [
-            { type: 'plane', icon: transportIcons.plane, label: (typeof transportTypes !== 'undefined' && transportTypes.plane) || 'Avión' },
-            { type: 'car', icon: transportIcons.car, label: (typeof transportTypes !== 'undefined' && transportTypes.car) || 'Auto' },
-            { type: 'bike', icon: transportIcons.bike, label: (typeof transportTypes !== 'undefined' && transportTypes.bike) || 'Bicicleta' },
-            { type: 'train', icon: transportIcons.train, label: (typeof transportTypes !== 'undefined' && transportTypes.train) || 'Tren' },
-            { type: 'ship', icon: transportIcons.ship, label: (typeof transportTypes !== 'undefined' && transportTypes.ship) || 'Barco' },
-            { type: 'walk', icon: transportIcons.walk, label: (typeof transportTypes !== 'undefined' && transportTypes.walk) || 'Caminata' },
-            { type: 'bus', icon: transportIcons.bus, label: (typeof transportTypes !== 'undefined' && transportTypes.bus) || 'Bus' },
-            { type: 'aerial', icon: transportIcons.aerial, label: (typeof transportTypes !== 'undefined' && transportTypes.aerial) || 'Aéreo' }
-        ];
-
-        transportOrder.forEach(function (item) {
+        // Usar la lista compartida de tipos de transporte (etiquetas ya construidas por buildTransportLabels)
+        orderedTransportTypes.forEach(function (item) {
             const color = transportColors[item.type];
 
             const legendItem = $(`
@@ -116,8 +128,6 @@
 
             legendContainer.append(legendItem);
         });
-
-        console.log('Leyenda de trip editor renderizada');
     }
 
     /**
@@ -150,8 +160,8 @@
                             <th style="width: 40px; text-align: center;">#</th>
                             <th style="width: 50px; text-align: center;"></th>
                             <th>${__('routes.route_name') || 'Nombre'}</th>
-                            <th style="width: 60px; text-align: center;">${__('routes.transport_type') || 'Tipo'}</th>
-                            <th style="width: 70px; text-align: center;">${__('routes.is_round_trip') || 'Ida/Vuelta'}</th>
+                            <th style="width: 110px; text-align: center;">${__('routes.transport_type') || 'Tipo'}</th>
+                            <th style="width: 100px; text-align: center;">${__('routes.is_round_trip') || 'Ida/Vuelta'}</th>
                             <th style="width: 90px; text-align: center;">${__('routes.distance') || 'Distancia'}</th>
                             <th style="width: 80px; text-align: center;">${__('trips.actions') || 'Acciones'}</th>
                         </tr>
@@ -482,34 +492,22 @@
         const layer = e.layer;
         const distanceMeters = calculateLayerDistance(layer);
 
-        // Pedir tipo de transporte
-        const transportType = promptTransportType(distanceMeters);
+        showTransportModal(distanceMeters, function (transportType) {
+            if (!transportType) return; // Usuario canceló
 
-        if (!transportType) {
-            return; // Usuario canceló
-        }
+            const color = transportColors[transportType];
+            layer.setStyle({ color: color, weight: 4, opacity: 0.8 });
 
-        // Asignar color según el transporte
-        const color = transportColors[transportType];
-        layer.setStyle({
-            color: color,
-            weight: 4,
-            opacity: 0.8
+            drawnItems.addLayer(layer);
+
+            layer.transportType = transportType;
+            layer.color = color;
+            layer.isRoundTrip = false;
+            layer.distanceMeters = distanceMeters;
+
+            updateRoutesData();
+            console.log('Ruta creada:', transportType, layer.toGeoJSON());
         });
-
-        // Agregar la capa al grupo
-        drawnItems.addLayer(layer);
-
-        // Guardar metadata en la capa
-        layer.transportType = transportType;
-        layer.color = color;
-        layer.isRoundTrip = false; // Por defecto no es round trip
-        layer.distanceMeters = distanceMeters;
-
-        // Actualizar datos
-        updateRoutesData();
-
-        console.log('Ruta creada:', transportType, layer.toGeoJSON());
     }
 
     /**
@@ -529,39 +527,100 @@
     }
 
     /**
-     * Pide al usuario el tipo de transporte
+     * Inicializa el modal de selección de tipo de transporte (se crea una sola vez)
      */
-    function promptTransportType(distanceMeters) {
-        const options = Object.keys(transportTypes);
-        let message = '';
+    function initTransportModal() {
+        if ($('#transportSelectModal').length > 0) return;
+
+        let cardsHtml = '';
+        orderedTransportTypes.forEach(function (t) {
+            const color = transportColors[t.type] || '#666';
+            // Scale the SVG icons up for the card display
+            const icon = t.icon.replace(/width="16" height="16"/, 'width="32" height="32"');
+            cardsHtml += `
+            <div class="col-6 col-sm-4 col-md-3 mb-2">
+                <button type="button"
+                        class="btn btn-outline-secondary transport-type-card w-100 d-flex flex-column align-items-center justify-content-center gap-2 p-3"
+                        data-type="${t.type}"
+                        style="min-height:90px; border-radius:8px; transition:all 0.15s;"
+                        onmouseover="this.style.borderColor='${color}';this.style.color='${color}';this.style.backgroundColor='${color}18';"
+                        onmouseout="this.style.borderColor='';this.style.color='';this.style.backgroundColor='';">
+                    <span class="transport-card-icon">${icon}</span>
+                    <span class="transport-card-label small fw-semibold">${t.label}</span>
+                </button>
+            </div>`;
+        });
+
+        const modalHtml = `
+        <div class="modal fade" id="transportSelectModal" tabindex="-1" aria-labelledby="transportSelectModalLabel" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="transportSelectModalLabel">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-signpost-split me-2" viewBox="0 0 16 16">
+                                <path d="M7 7V1.414a1 1 0 0 1 2 0V2h5a1 1 0 0 1 .8.4l.975 1.3a.5.5 0 0 1 0 .6L14.8 5.6a1 1 0 0 1-.8.4H9v5h5a1 1 0 0 1 .8.4l.975 1.3a.5.5 0 0 1 0 .6l-.975 1.3a1 1 0 0 1-.8.4H2a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1h5V6H2a1 1 0 0 1-.8-.4L.225 4.3a.5.5 0 0 1 0-.6L1.2 2.4A1 1 0 0 1 2 2h5v5z"/>
+                            </svg>
+                            ${__('map.instruction_select_transport') || 'Selecciona el tipo de transporte'}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="transportModalDistance" class="alert alert-light d-flex align-items-center gap-2 mb-3" style="display:none !important;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-rulers flex-shrink-0" viewBox="0 0 16 16">
+                                <path d="M1 0a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5v-1H2v-1h4v-1H4v-1h2v-1H2v-1h4V9H4V8h2V7H2V6h4V4H4V3h2V2H2V1h4V0H1zm10 0v6h.041a.5.5 0 0 1 .277.635l-.415 1.105.842 1.684a.5.5 0 0 1-.17.65l-.993.662.993.662a.5.5 0 0 1 .17.649l-.842 1.684.415 1.105a.5.5 0 0 1-.277.635H11v1h4a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1h-4zm1 1h2v1h-1v1h1v1h-1v1h1v1h-2V1zm2 9h-2v1h2v1h-1v1h1v1h-2v1h-1V9h3v1z"/>
+                            </svg>
+                            <span id="transportModalDistanceText"></span>
+                        </div>
+                        <div class="row g-2" id="transportCardsGrid">
+                            ${cardsHtml}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${__('common.cancel') || 'Cancelar'}</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        $('body').append(modalHtml);
+
+        // Al cerrar el modal (cancel, ESC, o tras selección) disparar callback
+        $('#transportSelectModal').on('hidden.bs.modal', function () {
+            if (typeof pendingTransportCallback === 'function') {
+                const cb = pendingTransportCallback;
+                const type = selectedTransportType;
+                pendingTransportCallback = null;
+                selectedTransportType = null;
+                cb(type); // null = cancelado
+            }
+        });
+
+        // Selección de tarjeta
+        $(document).on('click', '.transport-type-card', function () {
+            selectedTransportType = $(this).data('type');
+            bootstrap.Modal.getInstance($('#transportSelectModal')[0]).hide();
+        });
+    }
+
+    /**
+     * Muestra el modal de selección de tipo de transporte
+     */
+    function showTransportModal(distanceMeters, callback) {
+        initTransportModal();
+        pendingTransportCallback = callback;
+        selectedTransportType = null;
 
         if (distanceMeters > 0) {
             const formatted = formatDistanceDisplay(distanceMeters, 'car', false).replace(' · ', '');
-            message += `${__('routes.detected_distance') || 'Distancia detectada'}: ${formatted}\n\n`;
+            $('#transportModalDistanceText').text(
+                `${__('routes.detected_distance') || 'Distancia detectada'}: ${formatted}`
+            );
+            $('#transportModalDistance').css('display', 'flex');
+        } else {
+            $('#transportModalDistance').css('display', 'none');
         }
 
-        message += `${__('map.instruction_select_transport') || 'Selecciona el tipo de transporte'}:\n\n`;
-
-        options.forEach((key, index) => {
-            message += `${index + 1}. ${transportTypes[key]}\n`;
-        });
-
-        message += `\n${__('routes.enter_transport_number') || 'Ingresa el número'} (1-' + options.length + '):`;
-
-        const input = prompt(message);
-
-        if (!input) {
-            return null;
-        }
-
-        const index = parseInt(input) - 1;
-
-        if (index >= 0 && index < options.length) {
-            return options[index];
-        }
-
-        alert(__('routes.invalid_option_default') || 'Opción no válida. Seleccionando Auto por defecto.');
-        return 'car';
+        new bootstrap.Modal($('#transportSelectModal')[0]).show();
     }
 
     /**
@@ -905,7 +964,7 @@
     $(document).ready(function () {
         // Cargar configuración primero, luego inicializar el mapa
         loadConfig().always(function () {
-            // Inicializar mapa con la configuración cargada
+            buildTransportLabels(); // Construir etiquetas con datos de PHP
             initMap();
 
             // Renderizar leyenda con colores configurados
