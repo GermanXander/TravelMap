@@ -14,14 +14,16 @@ require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
 require_once __DIR__ . '/../src/models/TripTag.php';
 require_once __DIR__ . '/../src/models/PoiLink.php';
+require_once __DIR__ . '/../src/models/RouteLink.php';
 require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 try {
-    $tripModel    = new Trip();
-    $routeModel   = new Route();
-    $pointModel   = new Point();
-    $tripTagModel = new TripTag();
-    $poiLinkModel = new PoiLink();
+    $tripModel      = new Trip();
+    $routeModel     = new Route();
+    $pointModel     = new Point();
+    $tripTagModel   = new TripTag();
+    $poiLinkModel   = new PoiLink();
+    $routeLinkModel = new RouteLink();
     
     // Obtener todos los viajes publicados
     $trips = $tripModel->getAll('start_date DESC', 'published');
@@ -47,13 +49,30 @@ try {
             $dist = (int) ($route['distance_meters'] ?? 0);
             $totalDistance += $dist;
             
+            // Obtener links de la ruta
+            $links = RouteLink::toApiArray($routeLinkModel->getByRouteId((int) $route['id']));
+            
+            // Obtener thumbnail si existe
+            $thumbnail_url = null;
+            if (!empty($route['image_path'])) {
+                $thumb_path = FileHelper::getThumbnailPath($route['image_path']);
+                $thumbnail_url = $thumb_path ? BASE_URL . '/' . $thumb_path : null;
+            }
+            
             $processedRoutes[] = [
                 'id' => (int) $route['id'],
                 'transport_type' => $route['transport_type'],
                 'color' => $route['color'],
                 'distance_meters' => $dist,
                 'is_round_trip' => (bool) ($route['is_round_trip'] ?? false),
-                'geojson' => json_decode($route['geojson_data'], true)
+                'geojson' => json_decode($route['geojson_data'], true),
+                'name' => $route['name'] ?? null,
+                'description' => $route['description'] ?? null,
+                'image_url' => !empty($route['image_path']) ? BASE_URL . '/' . $route['image_path'] : null,
+                'thumbnail_url' => $thumbnail_url,
+                'start_datetime' => $route['start_datetime'] ?? null,
+                'end_datetime' => $route['end_datetime'] ?? null,
+                'links' => $links,
             ];
         }
         

@@ -500,7 +500,23 @@ function initInteractions() {
             const lat = parseFloat(el.dataset.lat);
             const lng = parseFloat(el.dataset.lng);
             const id = el.dataset.id;
+            const routeId = el.dataset.routeId;
 
+            // Handle route click
+            if (routeId) {
+                const route = TRIP_DATA.routes.find(r => String(r.id) === String(routeId));
+                if (route && route.geojson) {
+                    // Highlight active item in timeline
+                    document.querySelectorAll('.timeline-point').forEach(p => p.classList.remove('active'));
+                    el.classList.add('active');
+
+                    // Fit map bounds to route
+                    fitToRoute(route);
+                }
+                return;
+            }
+
+            // Handle point click (original behavior)
             if (isNaN(lat) || isNaN(lng)) return;
 
             // Highlight active point in timeline
@@ -534,6 +550,24 @@ function initInteractions() {
             }
         });
     });
+}
+
+function fitToRoute(route) {
+    if (!route.geojson || !route.geojson.geometry || !route.geojson.geometry.coordinates) return;
+
+    const coords = route.geojson.geometry.coordinates;
+    if (coords.length === 0) return;
+
+    if (MAP_RENDERER === 'leaflet') {
+        const latLngs = coords.map(c => L.latLng(c[1], c[0]));
+        const bounds = L.latLngBounds(latLngs);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+    } else {
+        const maplibregl = window.maplibregl;
+        if (!maplibregl) return;
+        const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+        map.fitBounds(bounds, { padding: 50, maxZoom: 12 });
+    }
 }
 
 // openLightbox alias — called from map-renderer popup image onclick

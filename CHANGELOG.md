@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.240] – 2026-04-13
+- Modelo Route: nuevos campos `name`, `description`, `image_path` en `create()` y `update()`
+- Nuevo modelo `RouteLink` para links externos tipificados en rutas (paralelo a `PoiLink`)
+- API `get_all_data.php`: incluye nuevos campos de ruta y links en el response
+- Editor de rutas (`trip_edit_map.php`): campos para nombre y descripción de rutas con modal de edición
+- Mapa público (MapLibre y Leaflet): popups de rutas muestran nombre y descripción si existen
+- Migración 019: nuevos campos `start_datetime` y `end_datetime` en tabla routes
+- Editor de rutas: campos de fecha/hora de inicio y fin del trayecto
+
 ## [1.0.230] – 2026-04-13
 - Toggle de caja de leyenda
 

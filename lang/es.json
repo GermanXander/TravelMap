@@ -355,6 +355,7 @@
   },
   "routes": {
     "title": "Rutas",
+    "route": "Ruta",
     "transport_type": "Tipo de Transporte",
     "transport_types": {
       "plane": "Avión",
@@ -372,7 +373,17 @@
     "error_saving": "Error al procesar los datos de las rutas",
     "detected_distance": "Distancia detectada",
     "enter_transport_number": "Ingresa el número",
-    "invalid_option_default": "Opción no válida. Seleccionando Auto por defecto."
+    "invalid_option_default": "Opción no válida. Seleccionando Auto por defecto.",
+    "edit_route": "Editar Ruta",
+    "route_name": "Nombre",
+    "name_placeholder": "Ej: Vuelo EZE-MAD",
+    "description": "Descripción",
+    "description_placeholder": "Notas sobre esta ruta...",
+    "start_datetime": "Inicio",
+    "end_datetime": "Fin",
+    "external_links": "Links Externos",
+    "add_link": "Agregar link",
+    "link_label_optional": "Etiqueta (opcional)"
   },
   "users": {
     "title": "Usuarios",

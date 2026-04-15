@@ -16,10 +16,12 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/models/Trip.php';
 require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
+require_once __DIR__ . '/../src/models/RouteLink.php';
 
 $tripModel = new Trip();
 $routeModel = new Route();
 $pointModel = new Point();
+$routeLinkModel = new RouteLink();
 $message = '';
 $message_type = '';
 
@@ -50,13 +52,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['routes_data'])) {
             
             // Crear nuevas rutas
             foreach ($routes_array as $route_data) {
-                $routeModel->create([
+                $route_id = $routeModel->create([
                     'trip_id' => $trip_id,
                     'transport_type' => $route_data['transport_type'] ?? 'car',
                     'geojson_data' => json_encode($route_data['geojson']),
                     'is_round_trip' => $route_data['is_round_trip'] ?? 0,
-                    'color' => $route_data['color'] ?? Route::getColorByTransport($route_data['transport_type'] ?? 'car')
+                    'color' => $route_data['color'] ?? Route::getColorByTransport($route_data['transport_type'] ?? 'car'),
+                    'name' => $route_data['name'] ?? null,
+                    'description' => $route_data['description'] ?? null,
+                    'start_datetime' => !empty($route_data['start_datetime']) ? date('Y-m-d H:i:s', strtotime($route_data['start_datetime'])) : null,
+                    'end_datetime' => !empty($route_data['end_datetime']) ? date('Y-m-d H:i:s', strtotime($route_data['end_datetime'])) : null
                 ]);
+                
+                // Guardar links de la ruta
+                if ($route_id && !empty($route_data['links']) && is_array($route_data['links'])) {
+                    $routeLinkModel->replaceForRoute($route_id, $route_data['links']);
+                }
             }
             
             $message = __('routes.saved_success');
@@ -87,7 +98,18 @@ foreach ($routes as $route) {
         'transport_type' => $route['transport_type'],
         'geojson' => json_decode($route['geojson_data'], true),
         'is_round_trip' => (int)$route['is_round_trip'],
-        'color' => $route['color']
+        'color' => $route['color'],
+        'name' => $route['name'] ?? '',
+        'description' => $route['description'] ?? '',
+        'start_datetime' => $route['start_datetime'] ?? '',
+        'end_datetime' => $route['end_datetime'] ?? '',
+        'links' => array_map(function($lnk) {
+            return [
+                'type' => $lnk['link_type'],
+                'url' => $lnk['url'],
+                'label' => $lnk['label'] ?? ''
+            ];
+        }, $routeLinkModel->getByRouteId((int)$route['id']))
     ];
 }
 
@@ -304,6 +326,8 @@ const tripColor = '<?= htmlspecialchars($trip['color_hex']) ?>';
 const existingRoutes = <?= json_encode($routes_js) ?>;
 const existingPoints = <?= json_encode($points_js) ?>;
 const transportTypes = <?= json_encode($transport_types) ?>;
+const routeLinkTypes = <?= json_encode(RouteLink::getTypes()) ?>;
+window.routeLinkTypes = routeLinkTypes;
 
 // Traducciones para JS
 const PHP_TRANSLATIONS = <?= $lang->getTranslationsAsJson() ?>;
