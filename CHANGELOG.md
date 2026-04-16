@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.240.1] – 2026-04-16
+- Control de acceso mejorado: protección de contraseña en index.php y trip.php
+- Admin logueado obtiene acceso directo sin ingresar contraseña
+- Nueva función `check_public_access()` en `includes/public_access.php` para verificación unificada de acceso
+- Función `is_trip_accessible()` para validar acceso a viajes específicos
+- Función `show_public_login_page()` para mostrar página de login con estética consistente
+- Interfaz de contraseña mejorada: mismo container/card/logo y fondo que login.php
+- trip.php ahora protegido: no se puede bypassear conociendo el ID si la contraseña es requerida
+- APIs actualizadas: `get_all_data.php` y `get_trip.php` ahora validan acceso con `check_public_access()`
+- Estilos CSS actualizados: form-label, form-group, alert para formularios de login público
+- Fondo de página de login unificado con gradientes oscuros (consistente con admin login)
+- Fix: Admin con sesión activa ahora obtiene acceso directo a las APIs públicas
+
 ## [1.0.240] – 2026-04-16
 - Nuevo sistema de restricción de acceso al sitio público con contraseñas compartidas
 - Modelo `PasswordShare` para gestión de enlaces compartidos con expiración y activación

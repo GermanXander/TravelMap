@@ -9,6 +9,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/public_access.php';
 require_once __DIR__ . '/../src/models/Trip.php';
 require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
@@ -19,19 +20,16 @@ require_once __DIR__ . '/../src/models/PasswordShare.php';
 require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 try {
-    $settingsModel = new Settings(getDB());
-    $requiresPass = $settingsModel->get('requires_pass', false);
+    // Verificar acceso al sitio público (admin logueado o contraseña válida)
+    $accessInfo = check_public_access();
     
-    $allowedTrips = '*'; // por defecto todos
-    if ($requiresPass) {
-        session_start();
-        if (!isset($_SESSION['public_password_trips'])) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Access denied']);
-            exit;
-        }
-        $allowedTrips = $_SESSION['public_password_trips'];
+    if (!$accessInfo['access']) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Access denied']);
+        exit;
     }
+    
+    $allowedTrips = $accessInfo['trips'];
     
     $tripModel      = new Trip();
     $routeModel     = new Route();
