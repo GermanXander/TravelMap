@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.239] – 2026-04-15
+- Refactor: tabla `links` polimórfica reemplaza a `poi_links` y `route_links`
+- Nuevo modelo `Link` con soporte de `entity_type` (`poi`, `route`, `trip`) y `entity_id`
+- Migración 021: crea `links`, migra datos existentes y elimina las tablas redundantes
+- `database.sql` actualizado para instalaciones nuevas
+- Cascade delete manejado en código en `Point::delete()`, `Route::delete()`, `Route::deleteByTripId()` y `Trip::delete()`
+
 ## [1.0.238] – 2026-04-15
 - Agregar scrollbar a descripciones largas en popups de puntos de interés
 
