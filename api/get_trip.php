@@ -9,6 +9,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/public_access.php';
 require_once __DIR__ . '/../src/models/Trip.php';
 require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
@@ -21,6 +22,13 @@ try {
     }
 
     $tripId = (int)$_GET['id'];
+    
+    // Verificar acceso al sitio público
+    $accessInfo = check_public_access();
+    if (!$accessInfo['access'] || !is_trip_accessible($tripId, $accessInfo)) {
+        http_response_code(403);
+        throw new Exception('Acceso denegado');
+    }
     
     $tripModel = new Trip();
     $routeModel = new Route();

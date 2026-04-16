@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/version.php';
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/public_access.php';
 require_once __DIR__ . '/src/models/Trip.php';
 require_once __DIR__ . '/src/models/Route.php';
 require_once __DIR__ . '/src/models/Point.php';
@@ -11,6 +12,30 @@ require_once __DIR__ . '/src/helpers/FileHelper.php';
 require_once __DIR__ . '/src/helpers/DateTimeHelper.php';
 require_once __DIR__ . '/src/models/Settings.php';
 
+// Verificar acceso al sitio público (con contraseña si es requerido)
+$accessInfo = check_public_access();
+
+// Validar ID del viaje
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("HTTP/1.0 404 Not Found");
+    die("Trip ID missing or invalid");
+}
+
+$tripId = (int)$_GET['id'];
+
+// Verificar que el viaje sea accesible para este usuario
+if (!is_trip_accessible($tripId, $accessInfo)) {
+    // Si no tiene acceso, mostrar página de login
+    if (!$accessInfo['access']) {
+        show_public_login_page(SITE_TITLE, $version, $accessInfo['error'] ?? null);
+    } else {
+        // Tiene acceso al sitio pero no a este viaje específico
+        header("HTTP/1.0 403 Forbidden");
+        die("You do not have access to this trip");
+    }
+    exit;
+}
+
 // Check feature flag
 $_settingsModel = new Settings(getDB());
 if (!$_settingsModel->get('trip_page_enabled', true)) {
@@ -18,13 +43,11 @@ if (!$_settingsModel->get('trip_page_enabled', true)) {
     die("Page not found");
 }
 
-// Validar ID
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header("HTTP/1.0 404 Not Found");
-    die("Trip ID missing or invalid");
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-$tripId = (int)$_GET['id'];
 $db = getDB();
 
 $tripModel    = new Trip();
