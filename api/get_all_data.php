@@ -14,9 +14,25 @@ require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
 require_once __DIR__ . '/../src/models/TripTag.php';
 require_once __DIR__ . '/../src/models/Link.php';
+require_once __DIR__ . '/../src/models/Settings.php';
+require_once __DIR__ . '/../src/models/PasswordShare.php';
 require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 try {
+    $settingsModel = new Settings(getDB());
+    $requiresPass = $settingsModel->get('requires_pass', false);
+    
+    $allowedTrips = '*'; // por defecto todos
+    if ($requiresPass) {
+        session_start();
+        if (!isset($_SESSION['public_password_trips'])) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            exit;
+        }
+        $allowedTrips = $_SESSION['public_password_trips'];
+    }
+    
     $tripModel      = new Trip();
     $routeModel     = new Route();
     $pointModel     = new Point();
@@ -24,7 +40,20 @@ try {
     $linkModel = new Link();
     
     // Obtener todos los viajes publicados
-    $trips = $tripModel->getAll('start_date DESC', 'published');
+    $allTrips = $tripModel->getAll('start_date DESC', 'published');
+    
+    // Filtrar viajes según contraseña
+    $trips = [];
+    if ($allowedTrips === '*') {
+        $trips = $allTrips;
+    } else {
+        $allowedIds = array_map('intval', explode(',', $allowedTrips));
+        foreach ($allTrips as $trip) {
+            if (in_array($trip['id'], $allowedIds)) {
+                $trips[] = $trip;
+            }
+        }
+    }
     
     $response = [
         'success' => true,

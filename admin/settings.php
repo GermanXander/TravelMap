@@ -241,7 +241,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ];
         }
         
-        // Actualizar todas las configuraciones
+        // Require password toggle (checkbox)
+        $updates['requires_pass'] = [
+            'value' => isset($_POST['requires_pass']) && $_POST['requires_pass'] === '1',
+            'type' => 'boolean'
+        ];
         if ($settingsModel->updateMultiple($updates)) {
             $_SESSION['success_message'] = __('settings.updated_successfully');
         } else {
@@ -1039,6 +1043,15 @@ require_once __DIR__ . '/../includes/header.php';
                               style="font-family: monospace; font-size: 12px;"
                               placeholder="<!-- Google Analytics, Facebook Pixel, etc. -->"><?= htmlspecialchars($currentSettings['site_analytics_code'] ?? '') ?></textarea>
                     <div class="form-hint"><?= __('settings.site_analytics_description') ?></div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="requires_pass" name="requires_pass" value="1"
+                               <?= ($currentSettings['requires_pass'] ?? false) ? 'checked' : '' ?>>
+                        <span class="form-check-label"><?= __('settings.requires_pass') ?? 'Require password for public access' ?></span>
+                    </label>
+                    <div class="form-hint" style="margin-left: 44px;"><?= __('settings.requires_pass_description') ?? 'Require a password to access the public map page' ?></div>
                 </div>
                 
                 <div class="form-group" style="margin-top: 24px;">

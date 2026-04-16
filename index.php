@@ -6,10 +6,98 @@ require_once __DIR__ . '/version.php';
 // Load settings to get map renderer preference
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/src/models/Settings.php';
+require_once __DIR__ . '/src/models/PasswordShare.php';
+
 $settingsModel = new Settings(getDB());
 $mapRenderer = $settingsModel->get('map_renderer', 'maplibre');
 $showFooterNote = $settingsModel->get('show_footer_note', true);
 $footerNoteText = $settingsModel->get('footer_note_text', '');
+$requiresPass = $settingsModel->get('requires_pass', false);
+
+// Verificar acceso con contraseña si es requerido
+$hasValidPassword = false;
+$allowedTrips = '*'; // por defecto todos
+
+if ($requiresPass) {
+    session_start();
+    $passwordShareModel = new PasswordShare(getDB());
+    
+    if (isset($_POST['password'])) {
+        // Intentar validar contraseña
+        $allowedTrips = $passwordShareModel->validatePassword($_POST['password']);
+        if ($allowedTrips !== false) {
+            $_SESSION['public_password_trips'] = $allowedTrips;
+            $hasValidPassword = true;
+        } else {
+            $passwordError = __('public.requires_pass_invalid') ?? 'Invalid password';
+        }
+    } elseif (isset($_SESSION['public_password_trips'])) {
+        // Verificar si la sesión aún es válida
+        $hasValidPassword = true;
+        $allowedTrips = $_SESSION['public_password_trips'];
+    }
+    
+    if (!$hasValidPassword) {
+        // Mostrar página de login
+        ?>
+        <!DOCTYPE html>
+        <html lang="<?= current_lang() ?>">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title><?= htmlspecialchars(SITE_TITLE) ?> - <?= __('public.requires_pass_title') ?? 'Requires Password' ?></title>
+            <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/public_map.css?v=<?php echo $version; ?>">
+            <link rel="icon" type="image/x-icon" href="<?= htmlspecialchars(SITE_FAVICON) ?>">
+        </head>
+        <body class="login-page">
+            <div class="login-container">
+                <div class="login-card">
+                    <div class="login-header">
+                        <h1 class="login-title"><?= __('public.requires_pass_title') ?? 'Requires Password' ?></h1>
+                        <p class="login-subtitle"><?= __('public.requires_pass_description') ?? 'Enter the password to access the travel map' ?></p>
+                    </div>
+                    
+                    <form method="post" class="login-form">
+                        <div class="form-group">
+                            <label for="password" class="form-label"><?= __('public.password') ?? 'Password' ?></label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   required 
+                                   autofocus
+                                   placeholder="<?= __('public.enter_password') ?? 'Enter password' ?>">
+                        </div>
+                        
+                        <?php if (isset($passwordError)): ?>
+                            <div class="alert alert-danger">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                <span><?= htmlspecialchars($passwordError) ?></span>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <?= __('public.access_map') ?? 'Access Map' ?>
+                        </button>
+                    </form>
+                    
+                    <div class="login-footer">
+                        <a href="admin/" class="text-muted"><?= __('app.admin_panel') ?? 'Admin Panel' ?></a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+} else {
+    session_start();
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?= current_lang() ?>">

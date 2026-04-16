@@ -12,6 +12,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_auth();
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/models/User.php';
+require_once __DIR__ . '/../src/models/PasswordShare.php';
 
 $userModel = new User();
 $users = $userModel->getAll('username ASC');
@@ -41,6 +42,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])
         $_SESSION['success_message'] = __('users.deleted_success');
     } else {
         $_SESSION['error_message'] = __('users.error_deleting');
+    }
+    
+    header('Location: users.php');
+    exit;
+}
+
+// Manejar toggle de contraseña
+if (isset($_GET['action']) && $_GET['action'] === 'toggle_password' && isset($_GET['id'])) {
+    $shareId = (int) $_GET['id'];
+    $passwordShareModel = new PasswordShare($conn);
+    
+    if ($passwordShareModel->toggleActive($shareId)) {
+        $_SESSION['success_message'] = __('users.password_updated');
+    } else {
+        $_SESSION['error_message'] = __('users.error_saving');
     }
     
     header('Location: users.php');
@@ -198,12 +214,191 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
+<!-- Password Shares Section -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <circle cx="12" cy="16" r="1"></circle>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <?= __('users.share_with_password') ?>
+        </h1>
+        <p class="page-subtitle"><?= __('users.manage_users') ?></p>
+    </div>
+    <div class="page-actions">
+        <a href="share_form.php" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-key me-2" viewBox="0 0 16 16">
+                <path d="M0 8a4 4 0 0 1 7.465-2H14a.5.5 0 0 1 .354.146l1.5 1.5a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0L13 9.207l-.646.647a.5.5 0 0 1-.708 0L11 9.207l-.646.647a.5.5 0 0 1-.708 0L9 9.207l-.646.647A.5.5 0 0 1 8 10h-.535A4 4 0 0 1 0 8m4-3a3 3 0 1 0 2.712 4.285A.5.5 0 0 1 7.163 9h.63l.853-.854a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l.646.647.793-.793-1-1h-6.63a.5.5 0 0 1-.451-.285A3 3 0 0 0 4 5z"/>
+                <path d="M4 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+            </svg>
+            <?= __('users.new_password_share') ?>
+        </a>
+    </div>
+</div>
+
+<?php
+require_once __DIR__ . '/../src/models/PasswordShare.php';
+$passwordShareModel = new PasswordShare($conn);
+$passwordShares = $passwordShareModel->getActive();
+?>
+
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0;">
+        <?php if (count($passwordShares) > 0): ?>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;"><?= __('users.password_share') ?></th>
+                            <th><?= __('share.trips') ?? 'Trips' ?></th>
+                            <th style="width: 300px;"><?= __('share.description_field') ?? 'Description' ?></th>
+                            <th style="width: 150px;"><?= __('users.valid_until') ?></th>
+                            <th style="width: 100px;" class="table-actions"><?= __('common.actions') ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($passwordShares as $share): ?>
+                            <tr>
+                                <td>
+                                    <code class="clickable-copy" 
+                                          data-password="<?= htmlspecialchars($share['password'], ENT_QUOTES) ?>" 
+                                          title="<?= __('users.copy_password') ?? 'Click to copy password' ?>"
+                                          style="font-family: monospace; background: var(--admin-bg-secondary); padding: 2px 6px; border-radius: 3px;">
+                                        <?= htmlspecialchars(substr($share['password'], 0, 20) . (strlen($share['password']) > 20 ? '...' : '')) ?>
+                                    </code>
+                                </td>
+                                <td>
+                                    <span class="cell-text">
+                                        <?php if ($share['trips'] === '*'): ?>
+                                            <?= htmlspecialchars(__('share.all_future_label') ?? 'Todos Incluso Futuros') ?>
+                                        <?php else: ?>
+                                            <?= htmlspecialchars($passwordShareModel->getTripNames($share['trips'])) ?>
+                                        <?php endif; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cell-text">
+                                        <?= htmlspecialchars($share['description'] ?? '') ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cell-date">
+                                        <?= $share['expires_at'] === null ? htmlspecialchars(__('share.never_expires') ?? 'Never') : date('d/m/Y', strtotime($share['expires_at'])) ?>
+                                    </span>
+                                </td>
+                                <td class="table-actions">
+                                    <div class="btn-group">
+                                        <button type="button" 
+                                                class="btn btn-icon btn-sm btn-outline-secondary" 
+                                                onclick="togglePasswordActive(<?= $share['id'] ?>, <?= $share['active'] ? 'true' : 'false' ?>)"
+                                                title="<?= __('users.toggle_active') ?>">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <?php if ($share['active']): ?>
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                <?php else: ?>
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                                <?php endif; ?>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="copyMessage" class="copy-message"></div>
+
+            <div class="admin-card-footer" style="font-size: 12px; color: var(--admin-text-muted);">
+                <?= count($passwordShares) ?> <?= __('users.password_share') ?>(s)
+            </div>
+        <?php else: ?>
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <circle cx="12" cy="16" r="1"></circle>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <h4 class="empty-state-title"><?= __('users.no_passwords') ?? 'No active passwords found' ?></h4>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <script>
 function confirmDelete(userId, username) {
     if (confirm(`<?= __('users.confirm_delete') ?? 'Are you sure you want to delete this user?' ?>\n\n${username}`)) {
         window.location.href = `users.php?action=delete&id=${userId}`;
     }
 }
+
+function copyPasswordToClipboard(password) {
+    if (!password) {
+        return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(password)
+            .then(() => showCopyMessage('<?= __('users.copied_to_clipboard') ?? 'Copied to clipboard' ?>'))
+            .catch(() => prompt('<?= __('users.copy_password') ?? 'Copy password' ?>', password));
+    } else {
+        prompt('<?= __('users.copy_password') ?? 'Copy password' ?>', password);
+    }
+}
+
+function showCopyMessage(message) {
+    const messageEl = document.getElementById('copyMessage');
+    if (!messageEl) {
+        return;
+    }
+
+    messageEl.textContent = message;
+    messageEl.classList.add('visible');
+
+    setTimeout(() => {
+        messageEl.classList.remove('visible');
+        messageEl.textContent = '';
+    }, 2200);
+}
+
+function togglePasswordActive(shareId, currentlyActive) {
+    const action = currentlyActive ? '<?= __('users.password_deactivated') ?>' : '<?= __('users.password_activated') ?>';
+    if (confirm(`<?= __('users.confirm_toggle_password') ?? 'Are you sure?' ?>\n\n${action}`)) {
+        window.location.href = `users.php?action=toggle_password&id=${shareId}`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.clickable-copy').forEach(element => {
+        element.addEventListener('click', function() {
+            copyPasswordToClipboard(this.dataset.password);
+        });
+    });
+});
 </script>
+
+<style>
+.clickable-copy {
+    cursor: pointer;
+}
+.clickable-copy:hover {
+    text-decoration: underline;
+}
+.copy-message {
+    display: inline-block;
+    margin: 12px 0 0;
+    color: var(--admin-success);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.copy-message.visible {
+    opacity: 1;
+}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
