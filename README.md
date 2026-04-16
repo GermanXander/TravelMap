@@ -20,6 +20,7 @@ Aplicación web para crear y visualizar mapas interactivos de viajes con puntos 
 - Caché offline de tiles via Service Worker
 - Selector de idioma (Inglés / Español)
 - URL compartible con estado del mapa
+- Posibilidad de restringir el acceso mediante contraseñas.
 
 ## Requisitos
 
