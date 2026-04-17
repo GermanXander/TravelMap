@@ -25,6 +25,15 @@
 - Tecla ESC cancela el modo POI
 - i18n: nuevas claves de traducción en `en.json` y `es.json` para todas las funcionalidades
 
+## [1.0.240] – 2026-04-16
+- Nuevo sistema de restricción de acceso al sitio público con contraseñas compartidas
+- Modelo `PasswordShare` para gestión de enlaces compartidos con expiración y activación
+- Migración 022: tabla `password_shares` para enlaces compartidos
+- Formulario de compartir en admin (`share_form.php`) con generación de enlaces temporales
+- Página de gestión de usuarios actualizada con opciones de compartir
+- Mejora de seguridad: bloquea accesos a sesiones de contraseñas expiradas o desactivadas
+- API `get_all_data.php` actualizada para verificar acceso compartido
+
 ## [1.0.239] – 2026-04-15
 - Refactor: tabla `links` polimórfica reemplaza a `poi_links` y `route_links`
 - Nuevo modelo `Link` con soporte de `entity_type` (`poi`, `route`, `trip`) y `entity_id`

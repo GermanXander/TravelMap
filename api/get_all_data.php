@@ -14,9 +14,28 @@ require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
 require_once __DIR__ . '/../src/models/TripTag.php';
 require_once __DIR__ . '/../src/models/Link.php';
+require_once __DIR__ . '/../src/models/Settings.php';
 require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 try {
+    $settingsModel = new Settings(getDB());
+    $requiresPass = $settingsModel->get('requires_pass', false);
+
+    $allowedTrips = '*'; // por defecto todos
+    if ($requiresPass) {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['public_password_trips'])) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            exit;
+        }
+
+        $allowedTrips = $_SESSION['public_password_trips'];
+    }
+
     $tripModel      = new Trip();
     $routeModel     = new Route();
     $pointModel     = new Point();
@@ -26,7 +45,20 @@ try {
     // Obtener todos los viajes publicados y planificados
     $publishedTrips = $tripModel->getAll('start_date DESC', 'published');
     $plannedTrips = $tripModel->getAll('start_date DESC', 'planned');
-    $trips = array_merge($publishedTrips, $plannedTrips);
+    $allTrips = array_merge($publishedTrips, $plannedTrips);
+
+    // Filtrar viajes según contraseña compartida
+    $trips = [];
+    if ($allowedTrips === '*') {
+        $trips = $allTrips;
+    } else {
+        $allowedIds = array_map('intval', explode(',', $allowedTrips));
+        foreach ($allTrips as $trip) {
+            if (in_array((int) $trip['id'], $allowedIds, true)) {
+                $trips[] = $trip;
+            }
+        }
+    }
     
     $response = [
         'success' => true,
