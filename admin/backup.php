@@ -28,6 +28,7 @@ $stats = [
     'points' => 0,
     'tags' => 0,
     'settings' => 0,
+    'links' => 0,
     'images_count' => 0,
     'images_size' => 0
 ];
@@ -35,18 +36,33 @@ $stats = [
 try {
     $stmt = $db->query('SELECT COUNT(*) as total FROM trips');
     $stats['trips'] = (int)$stmt->fetch()['total'];
-    
+
     $stmt = $db->query('SELECT COUNT(*) as total FROM routes');
     $stats['routes'] = (int)$stmt->fetch()['total'];
-    
+
     $stmt = $db->query('SELECT COUNT(*) as total FROM points_of_interest');
     $stats['points'] = (int)$stmt->fetch()['total'];
 
     $stmt = $db->query('SELECT COUNT(*) as total FROM trip_tags');
     $stats['tags'] = (int)$stmt->fetch()['total'];
-    
+
     $stmt = $db->query('SELECT COUNT(*) as total FROM settings');
     $stats['settings'] = (int)$stmt->fetch()['total'];
+
+    // Contar links — detecta la tabla disponible (polimórfica o legacy)
+    if ((bool) $db->query("SHOW TABLES LIKE 'links'")->fetchColumn()) {
+        $stmt = $db->query('SELECT COUNT(*) as total FROM links');
+        $stats['links'] = (int)$stmt->fetch()['total'];
+    } else {
+        if ((bool) $db->query("SHOW TABLES LIKE 'poi_links'")->fetchColumn()) {
+            $stmt = $db->query('SELECT COUNT(*) as total FROM poi_links');
+            $stats['links'] += (int)$stmt->fetch()['total'];
+        }
+        if ((bool) $db->query("SHOW TABLES LIKE 'route_links'")->fetchColumn()) {
+            $stmt = $db->query('SELECT COUNT(*) as total FROM route_links');
+            $stats['links'] += (int)$stmt->fetch()['total'];
+        }
+    }
     
     // Count images
     $uploadsDir = ROOT_PATH . '/uploads/points';
@@ -113,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $includeRoutes = isset($_POST['include_routes']);
         $includePoints = isset($_POST['include_points']);
         $includeTags = isset($_POST['include_tags']);
+        $includeLinks = isset($_POST['include_links']);
         $includeSettings = isset($_POST['include_settings']);
         $includeImages = isset($_POST['include_images']);
         $saveToServer = isset($_POST['save_to_server']);
@@ -152,6 +169,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $db->query('SELECT * FROM trip_tags ORDER BY id');
                 $backup['data']['trip_tags'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $backup['includes'][] = 'tags';
+            }
+
+            // Export links
+            // Soporta tanto la tabla polimórfica `links` como las tablas legacy `poi_links`/`route_links`
+            if ($includeLinks) {
+                $hasLinks     = (bool) $db->query("SHOW TABLES LIKE 'links'")->fetchColumn();
+                $hasPoiLinks  = (bool) $db->query("SHOW TABLES LIKE 'poi_links'")->fetchColumn();
+                $hasRouteLinks = (bool) $db->query("SHOW TABLES LIKE 'route_links'")->fetchColumn();
+
+                if ($hasLinks) {
+                    $stmt = $db->query('SELECT * FROM links ORDER BY entity_type, entity_id, sort_order');
+                    $backup['data']['links'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $backup['includes'][] = 'links';
+                } else {
+                    if ($hasPoiLinks && $includePoints) {
+                        $stmt = $db->query('SELECT * FROM poi_links ORDER BY poi_id, sort_order');
+                        $backup['data']['poi_links'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        $backup['includes'][] = 'poi_links';
+                    }
+                    if ($hasRouteLinks && $includeRoutes) {
+                        $stmt = $db->query('SELECT * FROM route_links ORDER BY route_id, sort_order');
+                        $backup['data']['route_links'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        $backup['includes'][] = 'route_links';
+                    }
+                }
             }
             
             // Export settings
@@ -309,11 +351,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $db->beginTransaction();
                 
-                $imported = ['trips' => 0, 'routes' => 0, 'points' => 0, 'tags' => 0, 'settings' => 0];
-                $idMap = ['trips' => []];
+                $imported = ['trips' => 0, 'routes' => 0, 'points' => 0, 'tags' => 0, 'settings' => 0, 'links' => 0];
+                $idMap = ['trips' => [], 'routes' => [], 'points' => []];
                 
                 // Replace mode - clear tables first
                 if ($restoreMode === 'replace') {
+                    if (isset($backupData['data']['links']) || isset($backupData['data']['poi_links']) || isset($backupData['data']['route_links'])) {
+                        if ((bool) $db->query("SHOW TABLES LIKE 'links'")->fetchColumn()) {
+                            $db->exec('DELETE FROM links');
+                        }
+                        // En DB legacy, poi_links y route_links se limpian por CASCADE al borrar routes/points_of_interest
+                    }
                     if (isset($backupData['data']['routes'])) {
                         $db->exec('DELETE FROM routes');
                     }
@@ -378,18 +426,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Import routes (with mapped trip_id)
                 if (isset($backupData['data']['routes'])) {
                     foreach ($backupData['data']['routes'] as $route) {
-                        $oldTripId = $route['trip_id'];
-                        $newTripId = $idMap['trips'][$oldTripId] ?? null;
-                        
+                        $oldRouteId = (int) $route['id'];
+                        $oldTripId  = $route['trip_id'];
+                        $newTripId  = $idMap['trips'][$oldTripId] ?? null;
+
                         if (!$newTripId) continue;
-                        
+
                         unset($route['id'], $route['created_at'], $route['updated_at']);
-                        
+
                         // Check if exists
                         $stmt = $db->prepare('SELECT id FROM routes WHERE trip_id = ? AND transport_type = ? AND geojson_data = ?');
                         $stmt->execute([$newTripId, $route['transport_type'], $route['geojson_data']]);
                         $existing = $stmt->fetch();
-                        
+
                         if (!$existing || $restoreMode === 'replace') {
                             $stmt = $db->prepare('INSERT INTO routes (trip_id, transport_type, geojson_data, is_round_trip, distance_meters, color) VALUES (?, ?, ?, ?, ?, ?)');
                             $stmt->execute([
@@ -400,7 +449,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $route['distance_meters'] ?? 0,
                                 $route['color'] ?? '#3388ff'
                             ]);
+                            $idMap['routes'][$oldRouteId] = (int) $db->lastInsertId();
                             $imported['routes']++;
+                        } else {
+                            $idMap['routes'][$oldRouteId] = (int) $existing['id'];
                         }
                     }
                 }
@@ -410,14 +462,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $skippedPoints = 0;
                     $updatedPoints = 0;
                     foreach ($backupData['data']['points_of_interest'] as $point) {
-                        $oldTripId = $point['trip_id'];
-                        $newTripId = $idMap['trips'][$oldTripId] ?? null;
-                        
+                        $oldPointId = (int) $point['id'];
+                        $oldTripId  = $point['trip_id'];
+                        $newTripId  = $idMap['trips'][$oldTripId] ?? null;
+
                         if (!$newTripId) {
                             $skippedPoints++;
                             continue;
                         }
-                        
+
                         unset($point['id'], $point['created_at'], $point['updated_at']);
                         
                         // Check if exists (comparing by date only, to handle different times on same day)
@@ -442,8 +495,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $point['visit_date'],
                                     $existing['id']
                                 ]);
+                                $idMap['points'][$oldPointId] = (int) $existing['id'];
                                 $updatedPoints++;
                             } else {
+                                $idMap['points'][$oldPointId] = (int) $existing['id'];
                                 $skippedPoints++;
                             }
                         } else {
@@ -459,6 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $point['longitude'],
                                 $point['visit_date'] ?? null
                             ]);
+                            $idMap['points'][$oldPointId] = (int) $db->lastInsertId();
                             $imported['points']++;
                         }
                     }
@@ -523,6 +579,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
+                // Import links — soporta formato nuevo (data.links) y legacy (data.poi_links / data.route_links)
+                // Detecta en runtime qué estructura de tablas tiene la DB destino
+                $linksToImport = [];
+
+                if (isset($backupData['data']['links'])) {
+                    foreach ($backupData['data']['links'] as $row) {
+                        $linksToImport[] = [
+                            'entity_type' => $row['entity_type'],
+                            'entity_id'   => (int) $row['entity_id'],
+                            'link_type'   => $row['link_type'],
+                            'url'         => $row['url'],
+                            'label'       => $row['label'] ?? null,
+                            'sort_order'  => (int) ($row['sort_order'] ?? 0),
+                        ];
+                    }
+                }
+                if (isset($backupData['data']['poi_links'])) {
+                    foreach ($backupData['data']['poi_links'] as $row) {
+                        $linksToImport[] = [
+                            'entity_type' => 'poi',
+                            'entity_id'   => (int) $row['poi_id'],
+                            'link_type'   => $row['link_type'],
+                            'url'         => $row['url'],
+                            'label'       => $row['label'] ?? null,
+                            'sort_order'  => (int) ($row['sort_order'] ?? 0),
+                        ];
+                    }
+                }
+                if (isset($backupData['data']['route_links'])) {
+                    foreach ($backupData['data']['route_links'] as $row) {
+                        $linksToImport[] = [
+                            'entity_type' => 'route',
+                            'entity_id'   => (int) $row['route_id'],
+                            'link_type'   => $row['link_type'],
+                            'url'         => $row['url'],
+                            'label'       => $row['label'] ?? null,
+                            'sort_order'  => (int) ($row['sort_order'] ?? 0),
+                        ];
+                    }
+                }
+
+                if (!empty($linksToImport)) {
+                    $dbHasLinks     = (bool) $db->query("SHOW TABLES LIKE 'links'")->fetchColumn();
+                    $dbHasPoiLinks  = (bool) $db->query("SHOW TABLES LIKE 'poi_links'")->fetchColumn();
+                    $dbHasRouteLinks = (bool) $db->query("SHOW TABLES LIKE 'route_links'")->fetchColumn();
+
+                    $stmtNewLinks   = $dbHasLinks     ? $db->prepare('INSERT INTO links (entity_type, entity_id, link_type, url, label, sort_order) VALUES (?, ?, ?, ?, ?, ?)') : null;
+                    $stmtPoiLinks   = $dbHasPoiLinks  ? $db->prepare('INSERT INTO poi_links (poi_id, link_type, url, label, sort_order) VALUES (?, ?, ?, ?, ?)') : null;
+                    $stmtRouteLinks = $dbHasRouteLinks ? $db->prepare('INSERT INTO route_links (route_id, link_type, url, label, sort_order) VALUES (?, ?, ?, ?, ?)') : null;
+
+                    foreach ($linksToImport as $link) {
+                        $entityType  = $link['entity_type'];
+                        $oldEntityId = $link['entity_id'];
+
+                        if ($entityType === 'poi') {
+                            $newEntityId = $idMap['points'][$oldEntityId] ?? null;
+                        } elseif ($entityType === 'route') {
+                            $newEntityId = $idMap['routes'][$oldEntityId] ?? null;
+                        } elseif ($entityType === 'trip') {
+                            $newEntityId = $idMap['trips'][$oldEntityId] ?? null;
+                        } else {
+                            continue;
+                        }
+
+                        if (!$newEntityId) continue;
+
+                        if ($stmtNewLinks) {
+                            // DB actualizada: tabla links polimórfica
+                            $stmtNewLinks->execute([$entityType, $newEntityId, $link['link_type'], $link['url'], $link['label'], $link['sort_order']]);
+                            $imported['links']++;
+                        } elseif ($entityType === 'poi' && $stmtPoiLinks) {
+                            // DB legacy: tabla poi_links
+                            $stmtPoiLinks->execute([$newEntityId, $link['link_type'], $link['url'], $link['label'], $link['sort_order']]);
+                            $imported['links']++;
+                        } elseif ($entityType === 'route' && $stmtRouteLinks) {
+                            // DB legacy: tabla route_links
+                            $stmtRouteLinks->execute([$newEntityId, $link['link_type'], $link['url'], $link['label'], $link['sort_order']]);
+                            $imported['links']++;
+                        }
+                    }
+                }
+
                 $db->commit();
                 
                 $summary = [];
@@ -531,6 +669,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($imported['points'] > 0) $summary[] = $imported['points'] . ' points';
                 if ($imported['tags'] > 0) $summary[] = $imported['tags'] . ' tags';
                 if ($imported['settings'] > 0) $summary[] = $imported['settings'] . ' settings';
+                if ($imported['links'] > 0) $summary[] = $imported['links'] . ' links';
                 
                 $details = [];
                 if (isset($imported['trips_skipped']) && $imported['trips_skipped'] > 0) {
@@ -691,7 +830,15 @@ require_once __DIR__ . '/../includes/header.php';
                             <span class="badge badge-info" style="margin-left: 8px;"><?= $stats['tags'] ?></span>
                         </label>
                     </div>
-                    
+
+                    <div class="form-check" style="margin-bottom: 10px;">
+                        <input type="checkbox" class="form-check-input" id="include_links" name="include_links" <?= $stats['links'] > 0 ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="include_links">
+                            <strong>Links</strong>
+                            <span class="badge badge-info" style="margin-left: 8px;"><?= $stats['links'] ?></span>
+                        </label>
+                    </div>
+
                     <div class="form-check" style="margin-bottom: 10px;">
                         <input type="checkbox" class="form-check-input" id="include_settings" name="include_settings">
                         <label class="form-check-label" for="include_settings">
