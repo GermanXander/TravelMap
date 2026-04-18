@@ -674,6 +674,8 @@
                                 tripTitle: trip.title,
                                 routeName: route.name || '',
                                 routeDescription: route.description || '',
+                                image_url: route.image_url || null,
+                                thumbnail_url: route.thumbnail_url || null,
                                 startDatetime: route.start_datetime || '',
                                 endDatetime: route.end_datetime || '',
                                 routeLinks: route.links || [],
@@ -741,6 +743,7 @@
                     popup.setLngLat(info.coordinate)
                         .setHTML(`
                             <div class="route-popup">
+                                ${(d.image_url || d.thumbnail_url) ? `<img src="${d.image_url || d.thumbnail_url}" alt="" style="width: 100%; max-height: 150px; object-fit: cover; margin-bottom: 8px; border-radius: 4px; cursor: pointer;" onclick="openLightbox('${d.image_url || d.thumbnail_url}', '${escapeHtml(d.routeName || d.tripTitle)}')" title="${__('map.click_to_view_full', '')}">` : ''}
                                 <strong>${transportIcons.plane} ${escapeHtml(d.tripTitle)}</strong>${appConfig?.tripPageEnabled ? ` <a href="trip.php?id=${d.tripId}" target="_blank" class="ms-1 text-muted text-decoration-none" title="${__('map.view_trip_details')}"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>` : ''}${futureLabel}
                                 ${d.routeName ? `<br><small class="text-primary fw-bold">${escapeHtml(d.routeName)}</small>` : ''}
                                 ${(d.startDatetime && d.startDatetime !== 'null') || (d.endDatetime && d.endDatetime !== 'null') ? `<br><small class="text-secondary">${formatRouteDatetime(d.startDatetime, d.endDatetime)}</small>` : ''}

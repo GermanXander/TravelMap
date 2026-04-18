@@ -53,8 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['routes_data'])) {
             
             // Crear nuevas rutas
             foreach ($routes_array as $route_data) {
-                // Imagen: usar path existente o dato Base64 (para preview en editor)
+                // Imagen: limpiar path si ya tiene BASE_URL duplicado
                 $image_path = $route_data['image_path'] ?? null;
+                if ($image_path && strpos($image_path, BASE_URL) === 0) {
+                    // Ya tiene BASE_URL prependeado, extraer solo el path relativo
+                    $image_path = substr($image_path, strlen(BASE_URL) + 1);
+                }
                 
                 // Si es Base64 y no es un path existente, procesarla como upload temporal
                 if ($image_path && strpos($image_path, 'data:') === 0) {
