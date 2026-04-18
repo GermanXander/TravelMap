@@ -1,17 +1,17 @@
 <?php
 /**
- * Migration 022: Add 'planned' status back to trips
+ * Migration 023: Add 'planned' status back to trips
  *
  * Adds 'planned' to the trips.status ENUM so trips can be:
  * - draft: hidden from the public map
  * - published: shown on the public map (past/current trips)
  * - planned: shown on the public map with visual distinction (future trips)
  */
-class Migration_022_trip_status_planned
+class Migration_023_trip_status_planned
 {
     public static function id(): string
     {
-        return '022_trip_status_planned';
+        return '023_trip_status_planned';
     }
 
     public static function description(): string

@@ -18,6 +18,9 @@ class Migration_016_poi_links_google_photos
 
     public static function check(PDO $db): bool
     {
+        if ((bool) $db->query("SHOW TABLES LIKE 'links'")->fetchColumn()) {
+            return true;
+        }
         $stmt = $db->query("SHOW COLUMNS FROM poi_links LIKE 'link_type'");
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) {

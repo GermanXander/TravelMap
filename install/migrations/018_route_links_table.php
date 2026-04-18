@@ -21,6 +21,9 @@ class Migration_018_route_links_table
 
     public static function check(PDO $db): bool
     {
+        if ((bool) $db->query("SHOW TABLES LIKE 'links'")->fetchColumn()) {
+            return true;
+        }
         $stmt = $db->query("SHOW TABLES LIKE 'route_links'");
         return (bool) $stmt->fetchColumn();
     }

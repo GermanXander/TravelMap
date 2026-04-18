@@ -225,11 +225,13 @@ class MigrationRunner
             ],
             'trips' => [
                 'id', 'title', 'description', 'start_date', 'end_date',
-                'color_hex', 'status', 'created_at', 'updated_at',
+                'color_hex', 'status', 'show_routes_in_timeline', 'created_at', 'updated_at',
             ],
             'routes' => [
                 'id', 'trip_id', 'transport_type', 'geojson_data',
-                'is_round_trip', 'distance_meters', 'color', 'created_at', 'updated_at',
+                'is_round_trip', 'distance_meters', 'color',
+                'name', 'description', 'image_path', 'start_datetime', 'end_datetime',
+                'created_at', 'updated_at',
             ],
             'points_of_interest' => [
                 'id', 'trip_id', 'title', 'description', 'type', 'icon',
@@ -246,8 +248,11 @@ class MigrationRunner
                 'id', 'latitude', 'longitude', 'city', 'display_name',
                 'country', 'created_at', 'expires_at',
             ],
-            'poi_links' => [
-                'id', 'poi_id', 'link_type', 'url', 'label', 'sort_order', 'created_at',
+            'links' => [
+                'id', 'entity_type', 'entity_id', 'link_type', 'url', 'label', 'sort_order', 'created_at',
+            ],
+            'password_shares' => [
+                'id', 'password', 'trips', 'description', 'created_at', 'expires_at', 'active',
             ],
             'schema_migrations' => [
                 'id', 'migration_id', 'description', 'applied_at',

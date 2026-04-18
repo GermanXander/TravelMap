@@ -208,6 +208,22 @@ CREATE TABLE IF NOT EXISTS links (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
+-- Tabla: password_shares
+-- Descripción: Contraseñas temporales para compartir acceso al mapa público
+-- ============================================
+CREATE TABLE IF NOT EXISTS password_shares (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    password    VARCHAR(255) NOT NULL UNIQUE,
+    trips       VARCHAR(1000) NOT NULL COMMENT 'Lista de IDs de viajes separados por coma, o * para todos',
+    description VARCHAR(100) NULL DEFAULT NULL COMMENT 'Descripción opcional de uso de la contraseña',
+    created_at  DATE NOT NULL DEFAULT (CURRENT_DATE),
+    expires_at  DATE NULL DEFAULT NULL,
+    active      BOOLEAN NOT NULL DEFAULT TRUE,
+    INDEX idx_expires_at (expires_at),
+    INDEX idx_active (active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
 -- Tabla: schema_migrations
 -- Descripción: Registro de migraciones aplicadas (gestionado por el instalador)
 -- ============================================
