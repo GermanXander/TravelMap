@@ -64,6 +64,28 @@
         });
     }
 
+    function normalizeRouteImageUrl(path) {
+        if (!path) return '';
+
+        const rawPath = String(path).trim();
+        const base = String(BASE_URL || '').replace(/\/+$/, '');
+
+        if (
+            rawPath.startsWith('http://') ||
+            rawPath.startsWith('https://') ||
+            rawPath.startsWith('data:') ||
+            rawPath.startsWith('blob:')
+        ) {
+            return rawPath;
+        }
+
+        if (rawPath.startsWith('/')) {
+            return base + rawPath;
+        }
+
+        return base + '/' + rawPath.replace(/^\.\//, '');
+    }
+
     /**
      * Carga la configuración desde el servidor
      */
@@ -1527,10 +1549,11 @@
             
             // Cargar imagen
             const routeImagePath = route.image_path || route.imageUrl || '';
+            const routeImagePreviewUrl = normalizeRouteImageUrl(routeImagePath);
             console.log('Loading route image, path:', routeImagePath, 'route id:', route.id);
             $('#routeImagePath').val(routeImagePath);
             if (routeImagePath) {
-                $('#routeImagePreview').attr('src', routeImagePath).show();
+                $('#routeImagePreview').attr('src', routeImagePreviewUrl).show();
                 $('#routeImagePlaceholder').hide();
                 $('#routeRemoveImageBtn').show();
             } else {
@@ -1615,7 +1638,7 @@
                     console.log('Upload response:', response);
                     if (response.success) {
                         $('#routeImagePath').val(response.path);
-                        $('#routeImagePreview').attr('src', response.url).show();
+                        $('#routeImagePreview').attr('src', normalizeRouteImageUrl(response.url || response.path)).show();
                         $('#routeImagePlaceholder').hide();
                         $('#routeRemoveImageBtn').show();
                     } else {
@@ -1631,10 +1654,17 @@
             });
         };
         
+        const openRouteImagePicker = function() {
+            const input = document.getElementById('routeImageInput');
+            if (input) {
+                input.click();
+            }
+        };
+
         const resetImagePlaceholder = function() {
             $('#routeImagePlaceholder').html(
                 '<p class="mb-1">' + ($__('routes.drag_drop_image') || 'Arrastra una imagen o haz clic para seleccionar') + '</p>' +
-                '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="$(\'#routeImageInput\').click()">' + 
+                '<button type="button" class="btn btn-outline-secondary btn-sm" id="routeSelectImageBtn">' + 
                 ($__('routes.select_image') || 'Seleccionar') + '</button>'
             );
         };
@@ -1656,15 +1686,30 @@
             }
         });
 
-        $('#routeImageDropArea').on('click', function(e) {
-            if (!$(e.target).closest('#routeRemoveImageBtn').length && !$(e.target).closest('#routeImagePreview').length) {
-                $('#routeImageInput').click();
+        $(document).on('change', '#routeImageInput', function(e) {
+            const files = e.target && e.target.files ? e.target.files : [];
+            if (files.length > 0) {
+                handleRouteImage(files[0]);
             }
         });
+
+        $('#routeImageDropArea').on('click', function(e) {
+            if (
+                $(e.target).is('#routeImageInput') ||
+                $(e.target).closest('#routeImageInput').length ||
+                $(e.target).closest('#routeRemoveImageBtn').length ||
+                $(e.target).closest('#routeImagePreview').length ||
+                $(e.target).closest('#routeSelectImageBtn').length
+            ) {
+                return;
+            }
+
+            openRouteImagePicker();
+        });
         
-        $('#routeSelectImageBtn').on('click', function(e) {
+        $(document).on('click', '#routeSelectImageBtn', function(e) {
             e.stopPropagation();
-            $('#routeImageInput').click();
+            openRouteImagePicker();
         });
 
         $('#routeRemoveImageBtn').on('click', function() {
