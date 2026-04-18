@@ -64,6 +64,28 @@
         });
     }
 
+    function normalizeRouteImageUrl(path) {
+        if (!path) return '';
+
+        const rawPath = String(path).trim();
+        const base = String(BASE_URL || '').replace(/\/+$/, '');
+
+        if (
+            rawPath.startsWith('http://') ||
+            rawPath.startsWith('https://') ||
+            rawPath.startsWith('data:') ||
+            rawPath.startsWith('blob:')
+        ) {
+            return rawPath;
+        }
+
+        if (rawPath.startsWith('/')) {
+            return base + rawPath;
+        }
+
+        return base + '/' + rawPath.replace(/^\.\//, '');
+    }
+
     /**
      * Carga la configuración desde el servidor
      */
@@ -656,6 +678,7 @@
                 geojson: geojson,
                 name: layer.routeName || '',
                 description: layer.routeDescription || '',
+                image_path: layer.routeImagePath || '',
                 start_datetime: layer.startDatetime || '',
                 end_datetime: layer.endDatetime || '',
                 links: layer.routeLinks || [],
@@ -664,6 +687,7 @@
         });
 
         // Actualizar input hidden (sin las referencias a layers)
+        console.log('Updating routes for save, count:', routesData.length);
         const routesDataForSave = routesData.map(route => ({
             transport_type: route.transport_type,
             color: route.color,
@@ -671,10 +695,12 @@
             geojson: route.geojson,
             name: route.name,
             description: route.description,
+            image_path: route.image_path || '',
             start_datetime: route.start_datetime,
             end_datetime: route.end_datetime,
             links: route.links || []
         }));
+        console.log('routesDataForSave[0] image_path:', routesDataForSave[0].image_path);
         document.getElementById('routes_data').value = JSON.stringify(routesDataForSave);
 
         // Update routes list UI
@@ -715,6 +741,7 @@
                 l.distanceMeters = route.distance_meters;
                 l.routeName = route.name || '';
                 l.routeDescription = route.description || '';
+                l.routeImagePath = route.image_path || '';
                 l.startDatetime = route.start_datetime || '';
                 l.endDatetime = route.end_datetime || '';
                 l.routeLinks = route.links || [];
@@ -1426,6 +1453,19 @@
                                 <textarea class="form-control" id="routeDescInput" rows="3" placeholder="${__('routes.description_placeholder') || 'Notas sobre esta ruta...'}"></textarea>
                             </div>
                             <div class="mb-3">
+                                <label class="form-label">${__('routes.image') || 'Imagen'}</label>
+                                <div class="border rounded p-3 text-center" id="routeImageDropArea" style="cursor: pointer;">
+                                    <input type="file" id="routeImageInput" accept="image/jpeg,image/png,image/jpg,image/gif" style="display: none;">
+                                    <img id="routeImagePreview" src="" alt="" class="img-thumbnail mb-2" style="max-width: 100%; max-height: 200px; display: none;">
+                                    <div id="routeImagePlaceholder">
+                                        <p class="mb-1">${__('routes.drag_drop_image') || 'Arrastra una imagen o haz clic para seleccionar'}</p>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="routeSelectImageBtn">${__('routes.select_image') || 'Seleccionar'}</button>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" id="routeRemoveImageBtn" style="display: none;">${__('routes.remove_image') || 'Quitar imagen'}</button>
+                                </div>
+                                <input type="hidden" id="routeImagePath" value="">
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">${__('routes.external_links') || 'Links Externos'}</label>
                                 <div id="route-links-container"></div>
                                 <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addRouteLinkBtn">
@@ -1507,6 +1547,21 @@
                 });
             }
             
+            // Cargar imagen
+            const routeImagePath = route.image_path || route.imageUrl || '';
+            const routeImagePreviewUrl = normalizeRouteImageUrl(routeImagePath);
+            console.log('Loading route image, path:', routeImagePath, 'route id:', route.id);
+            $('#routeImagePath').val(routeImagePath);
+            if (routeImagePath) {
+                $('#routeImagePreview').attr('src', routeImagePreviewUrl).show();
+                $('#routeImagePlaceholder').hide();
+                $('#routeRemoveImageBtn').show();
+            } else {
+                $('#routeImagePreview').attr('src', '').hide();
+                $('#routeImagePlaceholder').show();
+                $('#routeRemoveImageBtn').hide();
+            }
+            
             const modal = new bootstrap.Modal($('#routeEditModal'));
             modal.show();
         });
@@ -1526,6 +1581,8 @@
                 route.end_datetime   = buildDatetime('#routeEndDateInput',   '#routeEndTimeInput');
                 route.name = $('#routeNameInput').val();
                 route.description = $('#routeDescInput').val();
+                route.image_path = $('#routeImagePath').val();
+                console.log('Saving route image_path:', route.image_path, 'route id:', route.id);
                 
                 // Recolectar links
                 route.links = [];
@@ -1545,6 +1602,7 @@
                 if (route.layer) {
                     route.layer.routeName = route.name;
                     route.layer.routeDescription = route.description;
+                    route.layer.routeImagePath = route.image_path;
                     route.layer.startDatetime = route.start_datetime;
                     route.layer.endDatetime = route.end_datetime;
                     route.layer.routeLinks = route.links;
@@ -1552,6 +1610,114 @@
                 updateRoutesData();
                 bootstrap.Modal.getInstance($('#routeEditModal')).hide();
             }
+        });
+
+        // Route image upload handling via AJAX
+        const handleRouteImage = function(file) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Formato de imagen no válido. Usa JPEG, PNG o GIF.');
+                return;
+            }
+            
+            // Upload via AJAX
+            $('#routeImagePlaceholder').html('<p class="mb-0 text-muted">Subiendo...</p>');
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            console.log('Uploading to:', BASE_URL + '/api/upload_route_image.php');
+            
+            $.ajax({
+                url: BASE_URL + '/api/upload_route_image.php',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    console.log('Upload response:', response);
+                    if (response.success) {
+                        $('#routeImagePath').val(response.path);
+                        $('#routeImagePreview').attr('src', normalizeRouteImageUrl(response.url || response.path)).show();
+                        $('#routeImagePlaceholder').hide();
+                        $('#routeRemoveImageBtn').show();
+                    } else {
+                        alert(response.error || 'Error al subir imagen');
+                        resetImagePlaceholder();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('Upload error:', xhr, status, error);
+                    alert('Error de conexión: ' + status + ' - ' + error);
+                    resetImagePlaceholder();
+                }
+            });
+        };
+        
+        const openRouteImagePicker = function() {
+            const input = document.getElementById('routeImageInput');
+            if (input) {
+                input.click();
+            }
+        };
+
+        const resetImagePlaceholder = function() {
+            $('#routeImagePlaceholder').html(
+                '<p class="mb-1">' + ($__('routes.drag_drop_image') || 'Arrastra una imagen o haz clic para seleccionar') + '</p>' +
+                '<button type="button" class="btn btn-outline-secondary btn-sm" id="routeSelectImageBtn">' + 
+                ($__('routes.select_image') || 'Seleccionar') + '</button>'
+            );
+        };
+
+        $('#routeImageDropArea').on('dragenter dragover', function(e) {
+            e.preventDefault();
+            $(this).css({'border-color': '#0d6efd', 'background-color': '#f8f9fa'});
+        });
+        
+        $('#routeImageDropArea').on('dragleave drop', function(e) {
+            e.preventDefault();
+            $(this).css({'border-color': '#6c757d', 'background-color': '#fff'});
+        });
+        
+        $('#routeImageDropArea').on('drop', function(e) {
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                handleRouteImage(files[0]);
+            }
+        });
+
+        $(document).on('change', '#routeImageInput', function(e) {
+            const files = e.target && e.target.files ? e.target.files : [];
+            if (files.length > 0) {
+                handleRouteImage(files[0]);
+            }
+        });
+
+        $('#routeImageDropArea').on('click', function(e) {
+            if (
+                $(e.target).is('#routeImageInput') ||
+                $(e.target).closest('#routeImageInput').length ||
+                $(e.target).closest('#routeRemoveImageBtn').length ||
+                $(e.target).closest('#routeImagePreview').length ||
+                $(e.target).closest('#routeSelectImageBtn').length
+            ) {
+                return;
+            }
+
+            openRouteImagePicker();
+        });
+        
+        $(document).on('click', '#routeSelectImageBtn', function(e) {
+            e.stopPropagation();
+            openRouteImagePicker();
+        });
+
+        $('#routeRemoveImageBtn').on('click', function() {
+            $('#routeImageInput').val('');
+            $('#routeImagePath').val('');
+            $('#routeImagePreview').attr('src', '').hide();
+            $('#routeImagePlaceholder').show();
+            $('#routeRemoveImageBtn').hide();
         });
     }
 

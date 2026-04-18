@@ -384,6 +384,10 @@
   "routes": {
     "title": "Routes",
     "route": "Route",
+    "image": "Image",
+    "drag_drop_image": "Drag an image or click to select",
+    "select_image": "Select",
+    "remove_image": "Remove image",
     "transport_type": "Transport Type",
     "transport_types": {
       "plane": "Plane",

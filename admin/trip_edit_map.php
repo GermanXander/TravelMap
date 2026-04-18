@@ -17,6 +17,7 @@ require_once __DIR__ . '/../src/models/Trip.php';
 require_once __DIR__ . '/../src/models/Route.php';
 require_once __DIR__ . '/../src/models/Point.php';
 require_once __DIR__ . '/../src/models/Link.php';
+require_once __DIR__ . '/../src/helpers/FileHelper.php';
 
 $tripModel = new Trip();
 $routeModel = new Route();
@@ -52,6 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['routes_data'])) {
             
             // Crear nuevas rutas
             foreach ($routes_array as $route_data) {
+                // Imagen: usar path existente o dato Base64 (para preview en editor)
+                $image_path = $route_data['image_path'] ?? null;
+                
+                // Si es Base64 y no es un path existente, procesarla como upload temporal
+                if ($image_path && strpos($image_path, 'data:') === 0) {
+                    // Por ahora guardar el Base64 directamente (no es lo ideal pero funciona para preview)
+                    // TODO: implementar upload AJAX para procesar correctamente
+                }
+                
                 $route_id = $routeModel->create([
                     'trip_id' => $trip_id,
                     'transport_type' => $route_data['transport_type'] ?? 'car',
@@ -60,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['routes_data'])) {
                     'color' => $route_data['color'] ?? Route::getColorByTransport($route_data['transport_type'] ?? 'car'),
                     'name' => $route_data['name'] ?? null,
                     'description' => $route_data['description'] ?? null,
+                    'image_path' => $image_path,
                     'start_datetime' => !empty($route_data['start_datetime']) ? date('Y-m-d H:i:s', strtotime($route_data['start_datetime'])) : null,
                     'end_datetime' => !empty($route_data['end_datetime']) ? date('Y-m-d H:i:s', strtotime($route_data['end_datetime'])) : null
                 ]);
@@ -101,6 +112,7 @@ foreach ($routes as $route) {
         'color' => $route['color'],
         'name' => $route['name'] ?? '',
         'description' => $route['description'] ?? '',
+        'image_path' => !empty($route['image_path']) ? BASE_URL . '/' . $route['image_path'] : '',
         'start_datetime' => $route['start_datetime'] ?? '',
         'end_datetime' => $route['end_datetime'] ?? '',
         'links' => array_map(function($lnk) {

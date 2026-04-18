@@ -383,6 +383,10 @@
   "routes": {
     "title": "Rutas",
     "route": "Ruta",
+    "image": "Imagen",
+    "drag_drop_image": "Arrastra una imagen o haz clic para seleccionar",
+    "select_image": "Seleccionar",
+    "remove_image": "Quitar imagen",
     "transport_type": "Tipo de Transporte",
     "transport_types": {
       "plane": "Avión",

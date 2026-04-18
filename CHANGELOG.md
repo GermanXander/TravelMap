@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.251] – 2026-04-17
+- Agregar imagen a rutas/trayectos del viaje
+- Endpoint API `upload_route_image.php` para subir imágenes de rutas
+- Editor de rutas: input drag & drop para subir imagen (mismo sistema que POIs)
+- Popup de rutas en mapa público muestra la imagen si existe
+
 ## [1.0.250] – 2026-04-16
 ### Fase 1: Flujo del usuario en la carga de viajes
 - Nuevo panel "Acciones Rápidas" en el formulario de edición de viaje con acceso directo al editor de mapa, gestión de POI e importador EXIF
