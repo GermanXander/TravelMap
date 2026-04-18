@@ -1647,8 +1647,21 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.log('Upload error:', xhr, status, error);
-                    alert('Error de conexión: ' + status + ' - ' + error);
+                    console.log('Upload error:', xhr.status, status, error);
+                    console.log('Response text:', xhr.responseText);
+                    let errorMsg = 'Error de conexión: ' + status;
+                    if (xhr.status === 401) {
+                        errorMsg = 'No autorizado. Debes iniciar sesión.';
+                    } else if (xhr.status === 400) {
+                        try {
+                            const resp = JSON.parse(xhr.responseText);
+                            console.log('Error response JSON:', resp);
+                            errorMsg = resp.error || errorMsg;
+                        } catch(e) {
+                            console.log('Could not parse response:', xhr.responseText);
+                        }
+                    }
+                    alert(errorMsg);
                     resetImagePlaceholder();
                 }
             });
@@ -1661,11 +1674,13 @@
             }
         };
 
-        const resetImagePlaceholder = function() {
+const resetImagePlaceholder = function() {
+            const dragDropText = 'Arrastra una imagen o haz clic para seleccionar';
+            const selectBtnText = 'Seleccionar';
             $('#routeImagePlaceholder').html(
-                '<p class="mb-1">' + ($__('routes.drag_drop_image') || 'Arrastra una imagen o haz clic para seleccionar') + '</p>' +
-                '<button type="button" class="btn btn-outline-secondary btn-sm" id="routeSelectImageBtn">' + 
-                ($__('routes.select_image') || 'Seleccionar') + '</button>'
+                '<p class="mb-1">' + dragDropText + '</p>' +
+                '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="$(\'#routeImageInput\').click()">' + 
+                selectBtnText + '</button>'
             );
         };
 
